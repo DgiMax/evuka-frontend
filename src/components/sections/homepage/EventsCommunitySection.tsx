@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Inbox, Loader2 } from 'lucide-react';
+import { Inbox } from "lucide-react";
 import EventCardComponent from "@/components/cards/EventCardComponent";
-import api from '@/lib/api/axios';
-import { useActiveOrg } from '@/lib/hooks/useActiveOrg';
+import api from "@/lib/api/axios";
+import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
 
-// --- Types ---
+import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+
 interface EventData {
   slug: string;
   title: string;
@@ -16,7 +18,6 @@ interface EventData {
   start_time: string;
   location: string;
   event_type: string;
-  // Optional fields for future use (badges, price tags, etc.)
   is_paid?: boolean;
   price?: string;
   currency?: string;
@@ -26,68 +27,86 @@ interface EmptyStateProps {
   message: string;
 }
 
-// --- Empty State Component ---
 const EmptyState: React.FC<EmptyStateProps> = ({ message }) => (
-  <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg bg-muted/50 p-4 max-w-lg mx-auto">
-    <Inbox className="h-8 w-8 text-muted-foreground" />
-    <p className="text-muted-foreground mt-2 text-center text-sm">{message}</p>
+  <div className="col-span-full mx-auto w-full lg:w-3/4">
+    <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg bg-muted/50 p-4">
+      <Inbox className="h-8 w-8 text-muted-foreground" />
+      <p className="text-muted-foreground mt-2 text-center text-sm">{message}</p>
+    </div>
   </div>
 );
 
-// --- Main Component ---
+const LoadingSkeleton: React.FC = () => (
+  <SkeletonTheme baseColor="#e5e7eb" highlightColor="#f3f4f6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+      {[...Array(3)].map((_, index) => (
+        <div key={index} className="p-4 border rounded-lg shadow-sm">
+          <Skeleton height={160} className="mb-4" />
+          <Skeleton height={20} width="90%" className="mb-2" />
+          <Skeleton count={2} className="mb-1" />
+          <Skeleton height={16} width="60%" className="mt-3 mb-4" />
+          <Skeleton height={36} />
+        </div>
+      ))}
+    </div>
+  </SkeletonTheme>
+);
+
 export default function EventsCommunitySection() {
-  const [event, setEvent] = useState<EventData | null>(null);
+  const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Get the current organization slug (if any)
+
   const { activeSlug } = useActiveOrg();
 
-  // 1. Stable Fetch Function
-  // We include 'activeSlug' in dependencies so it recreates if the user switches orgs
-  const fetchBestUpcomingEvent = useCallback(async () => {
+  const fetchUpcomingEvents = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setEvent(null);
+    setEvents([]);
+
     try {
-      // Pass the organization header if we are in an org context
-      const config = activeSlug 
-        ? { headers: { "X-Organization-Slug": activeSlug } } 
+      const config = activeSlug
+        ? { headers: { "X-Organization-Slug": activeSlug } }
         : {};
 
-      // Call the dedicated standalone endpoint
-      const response = await api.get("/best-upcoming-events/", config);
-      setEvent(response.data);
+      const response = await api.get("/upcoming-events/", config);
+
+      const list = Array.isArray(response.data)
+        ? response.data.slice(0, 3)
+        : [];
+
+      setEvents(list);
     } catch (err: any) {
-      // 404 is valid (no upcoming events found), so we just set event to null
       if (err.response?.status === 404) {
-        setEvent(null);
+        setEvents([]);
       } else {
-        console.error("Error fetching best event:", err);
-        setError("Failed to load featured event.");
+        console.error("Error fetching events:", err);
+        setError("Failed to load community events.");
       }
     } finally {
       setIsLoading(false);
     }
-  }, [activeSlug]); 
+  }, [activeSlug]);
 
-  // 2. Effect Trigger
-  // Only depends on the fetch function (which is stable unless activeSlug changes)
   useEffect(() => {
-    fetchBestUpcomingEvent();
-  }, [fetchBestUpcomingEvent]);
+    fetchUpcomingEvents();
+  }, [fetchUpcomingEvents]);
 
-  // Helper to map API data to Card props
   const formatEventForCard = (e: EventData) => {
     const date = new Date(e.start_time);
-    const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    const locationText = e.event_type === 'online' ? 'Online Only' : e.location;
+    const formattedDate = date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+    const locationText = e.event_type === "online" ? "Online Only" : e.location;
 
     return {
       title: e.title,
       description: e.description,
       dateLocation: `${formattedDate} – ${locationText}`,
-      imageSrc: e.banner_image || "/images.png", // Ensure you have a fallback image in public folder
+      imageSrc: e.banner_image || "/images.png",
       buttonHref: `/events/${e.slug}`,
     };
   };
@@ -95,31 +114,35 @@ export default function EventsCommunitySection() {
   return (
     <section className="py-12 sm:py-20 bg-background">
       <div className="container mx-auto px-6 max-w-7xl text-center">
-        
-        <h4 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-2 !leading-tight">
-          Featured Community Event
+        <h4 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-2 leading-tight">
+          Upcoming Community Events
         </h4>
-        <p className="text-lg text-muted-foreground mb-12 max-w-3xl mx-auto">
+        <p className="text-lg text-muted-foreground mb-10 max-w-3xl mx-auto">
           Where learning meets culture and real-world connection.
         </p>
 
-        <div className="flex justify-center mb-12">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-40">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : error ? (
-            <EmptyState message={error} />
-          ) : event ? (
-            <div className="max-w-md w-full">
-              <EventCardComponent {...formatEventForCard(event)} />
-            </div>
-          ) : (
-            <EmptyState message="No upcoming public events scheduled yet." />
-          )}
+        <div className="flex justify-center mb-12 w-full">
+          <div className="w-full max-w-6xl">
+            {isLoading ? (
+              <LoadingSkeleton />
+            ) : error ? (
+              <EmptyState message={error} />
+            ) : events.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {events.map((event) => (
+                  <EventCardComponent
+                    key={event.slug}
+                    {...formatEventForCard(event)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState message="No upcoming public events scheduled yet." />
+            )}
+          </div>
         </div>
 
-        {event && (
+        {!isLoading && (
           <div className="mt-12 flex justify-center">
             <Link
               href="/community"
