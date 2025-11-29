@@ -35,7 +35,7 @@ export default function HeroSection() {
           <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left">
             
             {/* Badge */}
-            <div className="inline-flex items-center rounded-full border border-primary/20 bg-background/50 px-3 py-1 text-sm font-medium text-primary mb-5 backdrop-blur-sm shadow-sm">
+            <div className="inline-flex items-center rounded-full border border-primary/20 bg-background/50 px-3 py-1 text-sm font-medium text-primary mb-5 backdrop-blur-sm shadow">
               <Sparkles className="mr-2 h-3.5 w-3.5" />
               <span>Future-Ready Learning</span>
             </div>
@@ -64,12 +64,12 @@ export default function HeroSection() {
 
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Button asChild size="lg" className="h-11 px-8 text-base font-semibold shadow-md rounded-md bg-primary hover:bg-primary/90 text-primary-foreground transition-all">
-                <Link href="/signup">
+                <Link href="/courses">
                   Start Learning <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-11 px-8 text-base font-semibold border-2 bg-transparent rounded-md hover:bg-secondary/20">
-                <Link href="/creator-onboarding">
+                <Link href="https://tutors.e-vuka.com">
                   Become a Creator
                 </Link>
               </Button>

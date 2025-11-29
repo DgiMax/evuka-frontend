@@ -112,7 +112,7 @@ export default function EventsCommunitySection() {
   };
 
   return (
-    <section className="py-12 sm:py-20 bg-background">
+    <section className="py-12 sm:py-20 bg-white">
       <div className="container mx-auto px-6 max-w-7xl text-center">
         <h4 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-2 leading-tight">
           Upcoming Community Events

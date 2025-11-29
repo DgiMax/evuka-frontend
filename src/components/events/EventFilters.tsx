@@ -1,14 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { SlidersHorizontal, X } from "lucide-react"; 
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SlidersHorizontal, X, ChevronUp } from "lucide-react";
+
 import {
   Sheet,
   SheetContent,
@@ -18,162 +12,266 @@ import {
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button"; 
+import { Button } from "@/components/ui/button";
 
 // --- TYPE DEFINITIONS ---
-type FilterOption = {
-  id: string;
-  label: string;
-};
+type FilterOption = { id: string; label: string };
 
 type FilterData = {
-  event_types?: FilterOption[];
   categories?: FilterOption[];
-  price_options?: FilterOption[];
-  upcoming_options?: FilterOption[];
+  levels?: FilterOption[];
+  languages?: FilterOption[];
+  price?: { min: number; max: number };
 };
 
-export type FiltersState = {
-  type: Record<string, boolean>;
-  category: string;
-  price: string;
-  upcoming: string;
+type FiltersState = {
+  categories: Record<string, boolean>;
+  levels: Record<string, boolean>;
+  languages: Record<string, boolean>;
+  price: { min: number; max: number };
 };
 
-type EventFiltersProps = {
-  data: FilterData;
-  onFilterChange: (filters: FiltersState) => void;
+export type QueryParams = {
+  category?: string[];
+  level?: string[];
+  languages?: string[];
+  min_price?: string;
+  max_price?: string;
+};
+
+type CourseFiltersProps = {
+  data?: FilterData;
+  onFilterChange?: (filters: QueryParams) => void;
   defaultValues?: Partial<FiltersState>;
 };
 
-// --- SUB-COMPONENTS ---
+// Color constant matching EventFilters accent
+const PRIMARY_COLOR_CLASS = "accent-[#2694C6] focus:ring-[#2694C6]";
 
-const ChevronUpIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6l-6 6z"/></svg>
-);
+// --- SMALL DEBOUNCE (no external deps) ---
+function createDebounce<T extends (...args: any[]) => void>(fn: T, wait = 400) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const debounced = (...args: Parameters<T>) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn(...args);
+    }, wait);
+  };
+  debounced.cancel = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+  return debounced as T & { cancel: () => void };
+}
 
-const Checkbox = ({ id, label, checked, onChange }: { id: string, label: string, checked: boolean, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
-  <label htmlFor={id} className="flex items-center space-x-3 cursor-pointer text-gray-700 hover:text-gray-900 transition-colors py-1">
+// --- SUB-COMPONENTS (Styled to match EventFilters) ---
+
+const Checkbox = ({
+  label,
+  id,
+  checked,
+  onChange,
+}: {
+  label: string;
+  id: string;
+  checked: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) => (
+  <label
+    htmlFor={id}
+    className="flex items-center space-x-3 cursor-pointer text-gray-700 text-sm py-1"
+  >
     <input
       type="checkbox"
       id={id}
       checked={checked}
       onChange={onChange}
-      className="h-5 w-5 accent-[#2694C6] border-gray-300 rounded focus:ring-[#2694C6]"
+      className={`h-5 w-5 border-gray-300 rounded ${PRIMARY_COLOR_CLASS}`}
+      aria-checked={checked}
     />
     <span className="text-sm">{label}</span>
   </label>
 );
 
-// Added borders here to match desktop look
-const FilterSection = ({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean; }) => {
+const FilterSection = ({
+  title,
+  children,
+  defaultOpen = true,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-gray-200 last:border-0 py-4">
+    <div className="border-b border-gray-200">
       <button
-        className="w-full flex justify-between items-center text-left hover:bg-gray-50/50 transition-colors"
-        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex justify-between items-center py-3 px-4 text-left bg-gray-50 hover:bg-gray-100 transition-colors"
+        onClick={() => setIsOpen((v) => !v)}
+        aria-expanded={isOpen}
       >
-        <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">{title}</h3>
-        <ChevronUpIcon
-          className={`text-gray-400 transform transition-transform duration-200 ${isOpen ? "" : "rotate-180"}`}
+        <h3 className="font-bold text-gray-800 text-base">{title}</h3>
+        <ChevronUp
+          className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
+            isOpen ? "" : "rotate-180"
+          }`}
         />
       </button>
-      {isOpen && <div className="pt-3 space-y-2">{children}</div>}
+      {isOpen && <div className="p-4 space-y-3 bg-white">{children}</div>}
     </div>
   );
 };
 
-// --- 1. REUSABLE FILTER CONTENT (Pure UI) ---
+// --- UTILITY: Initialize sections so each checkbox is controlled ---
+const initializeSection = (items?: FilterOption[], defaults?: Record<string, boolean>) => {
+  const result: Record<string, boolean> = {};
+  items?.forEach((it) => {
+    result[it.id] = defaults?.[it.id] ?? false;
+  });
+  return result;
+};
 
+// ---  UTILITY: Converts FiltersState to Backend Query Params ---
+const buildQueryParams = (filtersState: FiltersState, defaultMaxPrice: number): QueryParams => {
+  const params: QueryParams = {};
+
+  const selectedCategories = Object.keys(filtersState.categories).filter(
+    (key) => filtersState.categories[key]
+  );
+  if (selectedCategories.length > 0) params.category = selectedCategories;
+
+  const selectedLevels = Object.keys(filtersState.levels).filter((key) => filtersState.levels[key]);
+  if (selectedLevels.length > 0) params.level = selectedLevels;
+
+  const selectedLanguages = Object.keys(filtersState.languages).filter(
+    (key) => filtersState.languages[key]
+  );
+  if (selectedLanguages.length > 0) params.languages = selectedLanguages;
+
+  if (filtersState.price.min > 0) params.min_price = String(filtersState.price.min);
+  if (filtersState.price.max < defaultMaxPrice) params.max_price = String(filtersState.price.max);
+
+  return params;
+};
+
+// --- Filter content component ---
 type FilterContentProps = {
-  data: FilterData;
+  data?: FilterData;
   filters: FiltersState;
   setFilters: React.Dispatch<React.SetStateAction<FiltersState>>;
 };
 
 const FilterFormContent = ({ data, filters, setFilters }: FilterContentProps) => {
-  
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCheckboxChange = (
+    section: keyof Omit<FiltersState, "price">,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const id = e.target.id;
+    const checked = e.target.checked;
     setFilters((prev) => ({
       ...prev,
-      type: { ...prev.type, [e.target.id]: e.target.checked },
+      [section]: { ...(prev[section] as Record<string, boolean>), [id]: checked },
     }));
   };
 
-  const handleFilterChange = (section: keyof Omit<FiltersState, 'type'>, value: string) => {
-    setFilters((prev) => ({ ...prev, [section]: value }));
+  const handlePriceChange = (type: "min" | "max", value: number) => {
+    setFilters((prev) => {
+      const current = prev.price;
+      // Prevent invalid state where min > max
+      if (type === "min" && value > current.max) {
+        return prev;
+      }
+      if (type === "max" && value < current.min) {
+        return prev;
+      }
+      return { ...prev, price: { ...current, [type]: value } };
+    });
   };
 
   return (
     <div className="flex flex-col">
-      {/* EVENT TYPES */}
-      {data?.event_types && data.event_types.length > 0 && (
-        <FilterSection title="Event Type">
-            {data.event_types.map((type) => (
-              <Checkbox
-                key={type.id}
-                id={type.id}
-                label={type.label}
-                checked={!!filters.type[type.id]}
-                onChange={handleCheckboxChange}
-              />
-            ))}
-        </FilterSection>
-      )}
-
       {/* CATEGORIES */}
       {data?.categories && data.categories.length > 0 && (
-        <FilterSection title="Category">
-          <Select
-            value={filters.category}
-            onValueChange={(value) => handleFilterChange("category", value)}
-          >
-            <SelectTrigger className="w-full"><SelectValue placeholder="All Categories" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {data.categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <FilterSection title="Categories">
+          {data.categories.map((cat) => (
+            <Checkbox
+              key={cat.id}
+              id={cat.id}
+              label={cat.label}
+              checked={!!filters.categories[cat.id]}
+              onChange={(e) => handleCheckboxChange("categories", e)}
+            />
+          ))}
         </FilterSection>
       )}
 
-      {/* PRICE */}
-      {data?.price_options && data.price_options.length > 0 && (
+      {/* LEVELS */}
+      {data?.levels && data.levels.length > 0 && (
+        <FilterSection title="Level">
+          {data.levels.map((lvl) => (
+            <Checkbox
+              key={lvl.id}
+              id={lvl.id}
+              label={lvl.label}
+              checked={!!filters.levels[lvl.id]}
+              onChange={(e) => handleCheckboxChange("levels", e)}
+            />
+          ))}
+        </FilterSection>
+      )}
+
+      {/* LANGUAGES */}
+      {data?.languages && data.languages.length > 0 && (
+        <FilterSection title="Language">
+          {data.languages.map((lang) => (
+            <Checkbox
+              key={lang.id}
+              id={lang.id}
+              label={lang.label}
+              checked={!!filters.languages[lang.id]}
+              onChange={(e) => handleCheckboxChange("languages", e)}
+            />
+          ))}
+        </FilterSection>
+      )}
+
+      {/* PRICE SLIDER */}
+      {data?.price && (
         <FilterSection title="Price">
-            {data.price_options.map((option) => (
-              <label key={option.id} className="flex items-center space-x-3 cursor-pointer text-gray-700 hover:text-gray-900 py-1">
-                <input
-                  type="radio"
-                  name="price"
-                  value={option.id}
-                  checked={filters.price === option.id}
-                  onChange={(e) => handleFilterChange("price", e.target.value)}
-                  className="accent-[#2694C6] h-4 w-4 border-gray-300"
-                />
-                <span className="text-sm">{option.label}</span>
-              </label>
-            ))}
-        </FilterSection>
-      )}
+          <div className="space-y-4 pt-2">
+            {/* Price Range Slider */}
+            <input
+              type="range"
+              min={String(data.price.min ?? 0)}
+              max={String(data.price.max)}
+              value={filters.price.max}
+              onChange={(e) => handlePriceChange("max", parseInt(e.target.value, 10) || 0)}
+              className={`w-full h-2 bg-gray-200 rounded-lg cursor-pointer ${PRIMARY_COLOR_CLASS} transition-colors`}
+              aria-label="Maximum price"
+            />
 
-      {/* UPCOMING */}
-      {data?.upcoming_options && data.upcoming_options.length > 0 && (
-        <FilterSection title="Time">
-          <Select
-            value={filters.upcoming}
-            onValueChange={(value) => handleFilterChange("upcoming", value)}
-          >
-            <SelectTrigger className="w-full"><SelectValue placeholder="Any time" /></SelectTrigger>
-            <SelectContent>
-              {data.upcoming_options.map((option) => (
-                <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {/* Price Inputs */}
+            <div className="flex items-center justify-between space-x-2">
+              <input
+                type="number"
+                value={filters.price.min}
+                onChange={(e) => handlePriceChange("min", parseInt(e.target.value, 10) || 0)}
+                className="w-full px-2 py-1 text-center border border-gray-300 rounded-md text-sm focus:border-[#2694C6] focus:ring-1 focus:ring-[#2694C6]"
+                aria-label="Minimum price"
+              />
+              <span className="text-gray-500">-</span>
+              <input
+                type="number"
+                value={filters.price.max}
+                onChange={(e) => handlePriceChange("max", parseInt(e.target.value, 10) || 0)}
+                className="w-full px-2 py-1 text-center border border-gray-300 rounded-md text-sm focus:border-[#2694C6] focus:ring-1 focus:ring-[#2694C6]"
+                aria-label="Maximum price"
+              />
+            </div>
+          </div>
         </FilterSection>
       )}
     </div>
@@ -181,129 +279,156 @@ const FilterFormContent = ({ data, filters, setFilters }: FilterContentProps) =>
 };
 
 // --- MAIN EXPORTED COMPONENT ---
+const CourseFilters = ({ data, onFilterChange, defaultValues }: CourseFiltersProps) => {
+  const DEFAULT_MAX_PRICE = data?.price?.max ?? 5999;
 
-const EventFilters = ({ data, onFilterChange, defaultValues }: EventFiltersProps) => {
+  // Initialize sections with known filter options so all inputs are controlled
   const initialFilters: FiltersState = {
-    type: defaultValues?.type || {},
-    category: defaultValues?.category || "all",
-    price: defaultValues?.price || "all",
-    upcoming: defaultValues?.upcoming || "all",
+    categories: initializeSection(data?.categories, defaultValues?.categories),
+    levels: initializeSection(data?.levels, defaultValues?.levels),
+    languages: initializeSection(data?.languages, defaultValues?.languages),
+    price: defaultValues?.price ?? { min: data?.price?.min ?? 0, max: DEFAULT_MAX_PRICE },
   };
 
+  // 1. DESKTOP STATE (Live)
   const [filters, setFilters] = useState<FiltersState>(initialFilters);
 
-  // Trigger parent update whenever filters change (Desktop behavior)
-  useEffect(() => {
-    onFilterChange(filters);
-  }, [filters, onFilterChange]);
-
-
-  const clearAll = () => {
-    setFilters(initialFilters);
-  };
-
-  // --- MOBILE LOGIC ---
+  // 2. MOBILE STATE (Buffer)
   const [mobileFilters, setMobileFilters] = useState<FiltersState>(filters);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
+  // Debounce logic (memoized)
+  const onFilterChangeRef = useRef(onFilterChange);
+  useEffect(() => {
+    onFilterChangeRef.current = onFilterChange;
+  }, [onFilterChange]);
+
+  // create debounced function once; cancel on unmount
+  const debouncedNotify = useMemo(() => {
+    const fn = (params: QueryParams) => {
+      onFilterChangeRef.current?.(params);
+    };
+    return createDebounce(fn, 400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const params = buildQueryParams(filters, DEFAULT_MAX_PRICE);
+    debouncedNotify(params);
+    return () => {
+      // do not cancel here each rerender; only cancel on unmount
+    };
+    // we intentionally exclude debouncedNotify from deps so it remains stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, DEFAULT_MAX_PRICE]);
+
+  useEffect(() => {
+    return () => {
+      // cleanup on unmount
+      debouncedNotify.cancel?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setFilters({
+      categories: initializeSection(data?.categories, {}),
+      levels: initializeSection(data?.levels, {}),
+      languages: initializeSection(data?.languages, {}),
+      price: { min: data?.price?.min ?? 0, max: DEFAULT_MAX_PRICE },
+    });
+  }, [data, DEFAULT_MAX_PRICE]);
+
+  // --- MOBILE HANDLERS ---
   const handleMobileOpen = () => {
-    setMobileFilters(filters);
+    setMobileFilters(filters); // sync mobile buffer
     setIsSheetOpen(true);
   };
 
   const handleMobileApply = () => {
-    setFilters(mobileFilters);
+    setFilters(mobileFilters); // push mobile buffer to live filters (triggers API via effect)
     setIsSheetOpen(false);
   };
-  
+
   const handleMobileClear = () => {
-    setMobileFilters(initialFilters);
-  }
+    setMobileFilters({
+      categories: initializeSection(data?.categories, {}),
+      levels: initializeSection(data?.levels, {}),
+      languages: initializeSection(data?.languages, {}),
+      price: { min: data?.price?.min ?? 0, max: DEFAULT_MAX_PRICE },
+    });
+  };
 
   return (
     <>
       {/* --- DESKTOP VIEW (Visible lg+) --- */}
-      <div className="hidden lg:block w-full max-w-sm bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-        <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+      <div className="hidden lg:block w-full bg-white border border-gray-200 rounded-md shadow font-sans overflow-hidden">
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <SlidersHorizontal size={18} /> Filters
+            <SlidersHorizontal size={18} />
+            Filters
           </h2>
           <button
             onClick={clearAll}
-            className="text-xs text-muted-foreground hover:text-[#2694C6] font-medium transition-colors"
+            className="bg-[#2694C6] hover:bg-[#1f7ba5] text-white font-semibold py-1.5 px-3 rounded text-sm transition-colors"
           >
-            Reset
+            Clear All
           </button>
         </div>
-        
-        <FilterFormContent 
-          data={data} 
-          filters={filters} 
-          setFilters={setFilters} 
-        />
+
+        {/* Content */}
+        {/* Added px-4 to match EventFilters inner spacing style */}
+        <div> 
+          <FilterFormContent data={data} filters={filters} setFilters={setFilters} />
+        </div>
       </div>
 
       {/* --- MOBILE VIEW (Visible < lg) --- */}
-      <div className="lg:hidden w-full mb-6">
+      <div className="lg:hidden w-full">
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
-            <Button 
+            <Button
               onClick={handleMobileOpen}
-              variant="outline" 
+              variant="outline"
               className="w-full justify-between h-12 border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               <span className="flex items-center gap-2 font-semibold">
                 <SlidersHorizontal size={18} /> Filter Events
               </span>
-              <span className="bg-gray-100 text-xs px-2 py-1 rounded-full text-gray-600">
-                Customize
-              </span>
+              <span className="bg-gray-100 text-xs px-2 py-1 rounded-full text-gray-600">Customize</span>
             </Button>
           </SheetTrigger>
-          
-          {/* FIXES:
-              1. [&>button]:hidden -> Hides the duplicate default close button provided by Shadcn
-              2. rounded-none -> Removes border radius completely
-              3. w-[300px] -> Sets a standard manageable width
-          */}
-          <SheetContent 
-            side="left" 
+
+          <SheetContent
+            side="left"
             className="w-[300px] sm:w-[400px] flex flex-col h-full p-0 rounded-none border-r-0 shadow-xl overflow-hidden [&>button]:hidden"
           >
-            {/* Header with Custom Close Button */}
+            {/* Header */}
             <SheetHeader className="p-5 border-b border-gray-200 bg-white flex flex-row items-center justify-between space-y-0">
-              <SheetTitle className="text-xl font-bold">
-                Filter Events
-              </SheetTitle>
+              <SheetTitle className="text-xl font-bold">Filter Events</SheetTitle>
               <SheetClose asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200">
-                   <X size={18} />
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200">
+                  <X size={18} />
                 </Button>
               </SheetClose>
             </SheetHeader>
 
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto px-5 py-2">
-              <FilterFormContent 
-                data={data} 
-                filters={mobileFilters} 
-                setFilters={setMobileFilters} 
-              />
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+              <FilterFormContent data={data} filters={mobileFilters} setFilters={setMobileFilters} />
             </div>
 
-            {/* Fixed Footer with Clear & Apply Buttons */}
-            <SheetFooter className="p-5 border-t border-gray-200 bg-gray-50/50 mt-auto flex flex-row gap-3 sm:justify-between">
-              <Button 
+            {/* Footer */}
+            <SheetFooter className="p-5 border-t border-gray-200 bg-gray-50 mt-auto flex flex-row gap-3 sm:justify-between">
+              <Button
                 variant="outline"
                 onClick={handleMobileClear}
-                className="flex-1 border-gray-300 text-gray-700 hover:bg-white hover:text-red-600 hover:border-red-200"
+                className="flex-1 border-gray-300 text-gray-700 hover:text-red-600 hover:border-red-200"
               >
                 Clear
               </Button>
-              <Button 
-                onClick={handleMobileApply}
-                className="flex-[2] bg-[#2694C6] hover:bg-[#1f7ba5] text-white"
-              >
+              <Button onClick={handleMobileApply} className="flex-[2] bg-[#2694C6] hover:bg-[#1f7ba5] text-white">
                 Show Results
               </Button>
             </SheetFooter>
@@ -314,4 +439,4 @@ const EventFilters = ({ data, onFilterChange, defaultValues }: EventFiltersProps
   );
 };
 
-export default EventFilters;
+export default CourseFilters;
