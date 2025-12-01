@@ -3,10 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
-import { cn } from "@/lib/utils"; 
-import Link from 'next/link';
-import { Search } from 'lucide-react';
-
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -18,45 +15,86 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import Link from "next/link";
+import { Building, Plus, Search } from "lucide-react";
+
 const PERSONAL_ACCOUNT_VALUE = "__personal__";
+
+// Define domains. Fallback to production URLs if Env vars are missing.
+const STUDENT_DOMAIN = process.env.NEXT_PUBLIC_STUDENT_URL || "https://e-vuka.com";
+const TUTOR_DOMAIN = process.env.NEXT_PUBLIC_TUTOR_URL || "https://tutors.e-vuka.com";
 
 interface OrganizationSwitcherProps {
   triggerClassName?: string;
 }
 
-export default function OrganizationSwitcher({ triggerClassName }: OrganizationSwitcherProps) {
+export default function OrganizationSwitcher({
+  triggerClassName,
+}: OrganizationSwitcherProps) {
   const router = useRouter();
   const { user, loading } = useAuth();
   const { activeSlug } = useActiveOrg();
 
-  if (loading || !user) {
-    return null;
-  }
+  if (loading || !user) return null;
 
-  const selectedValue = activeSlug === null ? PERSONAL_ACCOUNT_VALUE : activeSlug;
+  const organizations = user.organizations ?? [];
+  const selectedValue = activeSlug ?? PERSONAL_ACCOUNT_VALUE;
 
   const handleSelectChange = (value: string) => {
     if (value === selectedValue) return;
 
+    // 1. Handle Personal Account Switch
     if (value === PERSONAL_ACCOUNT_VALUE) {
-      router.push("/dashboard");
+      // Logic: If on tutor domain, maybe force them to student domain for personal? 
+      // For now, we assume personal dashboard exists on the current domain.
+      router.push("/");
+      return;
+    }
+
+    // 2. Find the target organization details
+    const targetOrg = organizations.find((org) => org.organization_slug === value);
+
+    if (!targetOrg) {
+      // Fallback if org not found in context (shouldn't happen)
+      router.push(`/${value}/`);
+      return;
+    }
+
+    // 3. Determine Target Domain based on Role
+    const isStudentRole = targetOrg.role === "student";
+    const targetBaseUrl = isStudentRole ? STUDENT_DOMAIN : TUTOR_DOMAIN;
+
+    // 4. Check if we are ALREADY on that domain
+    // We strip protocols/slashes to compare strictly domain parts or full origins
+    const currentOrigin = window.location.origin; // e.g., "https://tutors.e-vuka.com"
+    
+    // Helper to normalize URLs for comparison (remove trailing slashes)
+    const normalize = (url: string) => url.replace(/\/$/, "");
+
+    if (normalize(currentOrigin) === normalize(targetBaseUrl)) {
+      // SAME DOMAIN: Use Client-Side Navigation (Faster)
+      router.push(`/${value}/`);
     } else {
-      router.push(`/${value}/dashboard`);
+      // DIFFERENT DOMAIN: Use Hard Redirect
+      window.location.href = `${targetBaseUrl}/${value}/`;
     }
   };
 
   return (
-    <Select value={selectedValue} onValueChange={handleSelectChange}>
+    <Select
+      key={activeSlug ?? "personal"}
+      value={selectedValue}
+      onValueChange={handleSelectChange}
+    >
       <SelectTrigger
         className={cn(
-          "w-full min-w-[200px] sm:w-auto justify-between border-gray-300",
+          "justify-between truncate", 
           triggerClassName
         )}
         aria-label="Select account or organization"
       >
         <SelectValue placeholder="Select account..." />
       </SelectTrigger>
-
       <SelectContent>
         <SelectGroup>
           <SelectItem value={PERSONAL_ACCOUNT_VALUE}>
@@ -64,37 +102,49 @@ export default function OrganizationSwitcher({ triggerClassName }: OrganizationS
           </SelectItem>
         </SelectGroup>
 
-        {user.organizations && user.organizations.length > 0 && (
-          <SelectSeparator />
+        {organizations.length > 0 && (
+          <>
+            <SelectSeparator />
+            <SelectGroup>
+              <SelectLabel>Organizations</SelectLabel>
+              {organizations
+                .filter(
+                  (org) =>
+                    org.organization_slug && org.organization_slug.trim() !== ""
+                )
+                .map((org) => (
+                  <SelectItem
+                    key={org.organization_slug}
+                    value={org.organization_slug}
+                  >
+                    <div className="flex items-center justify-between w-full gap-2">
+                        <span>{org.organization_name}</span>
+                        {/* Optional: Show badge to indicate role context */}
+                        <span className="text-xs text-muted-foreground uppercase border px-1 rounded">
+                            {org.role === 'student' ? 'Student' : 'Admin'}
+                        </span>
+                    </div>
+                  </SelectItem>
+                ))}
+            </SelectGroup>
+          </>
         )}
 
-        {user.organizations && user.organizations.length > 0 && (
-          <SelectGroup>
-            <SelectLabel>Organizations</SelectLabel>
-            {user.organizations.map((org) => (
-              <SelectItem
-                key={org.organization_slug}
-                value={org.organization_slug}
-              >
-                {org.organization_name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        )}
-
+        {/* Action links */}
         <SelectSeparator />
-
-        <Link
-          href="/organizations/browse"
-          className="flex items-center gap-2 p-2 text-sm text-muted-foreground hover:text-primary hover:bg-accent rounded-sm mx-1 cursor-pointer transition-colors"
-          onMouseDown={(e) => { 
-            e.preventDefault(); 
-            router.push("/organizations/browse"); 
-          }}
-        >
-          <Search className="w-4 h-4" />
-          <span>Browse Organizations</span>
-        </Link>
+        <SelectGroup>
+          <SelectLabel>Actions</SelectLabel>
+          <Link
+            href="/organizations/browse/"
+            className={cn(
+              "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none transition-colors",
+              "focus:bg-accent focus:text-accent-foreground hover:bg-accent"
+            )}
+          >
+            <Search className="mr-2 h-4 w-4" />
+            <span>Browse Organizations</span>
+          </Link>
+        </SelectGroup>
       </SelectContent>
     </Select>
   );

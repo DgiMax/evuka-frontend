@@ -8,7 +8,7 @@ const dvukaFeatures = [
     items: ["Kiswahili", "Kikuyu", "Dholuo", "More Coming Soon"],
     buttonText: "Start Learning a Language",
     buttonHref: "/courses",
-    imageSrc: "/whyDVuka/Languages Banner.jpg",
+    imageSrc: "/whyDVuka/languages-banner.jpg",
     bgColor: "bg-primary",
   },
   {
@@ -17,7 +17,7 @@ const dvukaFeatures = [
     items: ["Web Development", "Graphic Design", "Digital Marketing", "AI Basics"],
     buttonText: "Explore IT Courses",
     buttonHref: "/courses",
-    imageSrc: "/whyDVuka/IT & Digital Skills.jpg",
+    imageSrc: "/whyDVuka/it-digital-skills.jpg",
     bgColor: "bg-primary",
   },
   {
@@ -26,7 +26,7 @@ const dvukaFeatures = [
     items: ["Agribusiness", "Fashion & Crafts", "Carpentry", "Electrical Basics"],
     buttonText: "Discover Vocational Skills",
     buttonHref: "/courses",
-    imageSrc: "/whyDVuka/Vocational Training Banner.jpg",
+    imageSrc: "/whyDVuka/vocational-training-banner.jpg",
     bgColor: "bg-primary",
   },
   {
@@ -35,7 +35,7 @@ const dvukaFeatures = [
     items: ["Family Plans", "Interactive Lessons", "Parent Resources", "Progress Tracking"],
     buttonText: "Start Homeschooling",
     buttonHref: "/organizations/browse",
-    imageSrc: "/whyDVuka/Homeschooling Hub Banner.jpg",
+    imageSrc: "/whyDVuka/homeschooling-hub-banner.jpg",
     bgColor: "bg-primary",
   },
   {
@@ -44,7 +44,7 @@ const dvukaFeatures = [
     items: ["Lesson Support", "Resources", "Student Communities", "Assessment Tools"],
     buttonText: "Explore CBC Courses",
     buttonHref: "/courses",
-    imageSrc: "/whyDVuka/CBC-Aligned Learning Banner.jpg",
+    imageSrc: "/whyDVuka/cbc-aligned-learning-banner.jpg",
     bgColor: "bg-primary",
   },
   {
@@ -53,7 +53,7 @@ const dvukaFeatures = [
     items: ["Poetry Nights", "Digital Storytelling", "Cultural Festivals", "Hackathons"],
     buttonText: "Join an Event",
     buttonHref: "/events",
-    imageSrc: "/whyDVuka/Events & Community Banner.jpg",
+    imageSrc: "/whyDVuka/events-community-banner.jpg",
     bgColor: "bg-primary",
   },
 ];

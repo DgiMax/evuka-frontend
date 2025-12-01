@@ -3,13 +3,11 @@
 import React, { useState } from "react";
 import Input from "@/components/ui/FormInput";
 import { useRouter } from "next/navigation";
-import PublicRoute from "@/components/PublicRoute";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react"; 
 
-// --- Styling Constants ---
-const PRIMARY_COLOR = "#2694C6"; 
 const PRIMARY_TEXT_CLASS = "text-[#2694C6]";
 const PRIMARY_BUTTON_CLASS = "bg-primary hover:bg-[#1f7ba5] transition-colors"; 
 
@@ -19,6 +17,8 @@ export default function LogInPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +30,14 @@ export default function LogInPage() {
     try {
       await login(username, password);
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      // 1. ROBUST ERROR LOGIC
+      const errorMessage = 
+        err.response?.data?.detail || 
+        err.response?.data?.non_field_errors?.[0] || 
+        err.message || 
+        "Login failed. Please check your credentials.";
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -69,25 +76,54 @@ export default function LogInPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
               />
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10" 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
 
               <div className="text-right">
                 <Link 
-                  href="/reset-password" 
+                  href="/forgot-password" 
                   className={`text-sm ${PRIMARY_TEXT_CLASS} hover:underline`}
                 >
                   Forgot Password?
                 </Link>
               </div>
 
+              {/* 2. STYLED ERROR ALERT BOX */}
               {error && (
-                <p className="text-red-500 text-sm mt-2 text-center">{error}</p>
+                <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700 font-medium">
+                        {error}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
 
               <button
