@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react"; 
+import GoogleLoginBtn from "@/components/ui/GoogleLoginBtn";
 
 const PRIMARY_TEXT_CLASS = "text-[#2694C6]";
 const PRIMARY_BUTTON_CLASS = "bg-primary hover:bg-[#1f7ba5] transition-colors"; 
@@ -144,6 +145,10 @@ export default function LogInPage() {
               Create a Free Account
             </Link>
           </p>
+        </div>
+
+        <div className="flex justify-center py-6">
+          <GoogleLoginBtn />
         </div>
 
       </div>

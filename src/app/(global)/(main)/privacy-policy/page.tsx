@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Lock, Eye, Server, Trash2, UserCheck, Globe, Database, ShieldCheck } from "lucide-react";
+import { Lock, Eye, Server, Trash2, UserCheck, Database, ShieldCheck } from "lucide-react";
 
 export default function PrivacyPage() {
   return (
@@ -16,9 +16,9 @@ export default function PrivacyPage() {
           <h1 className="text-4xl md:text-5xl font-bold mb-6">Privacy Policy</h1>
           <p className="text-lg md:text-xl opacity-90 max-w-2xl mx-auto">
             We value your privacy and are committed to keeping your information safe. 
-            Rooted in Kenyan law, built for global standards.
+            Rooted in Kenyan law, built for practical, community-driven education.
           </p>
-          <p className="mt-4 text-sm font-mono opacity-70">Updated: September 2025</p>
+          <p className="mt-4 text-sm font-mono opacity-70">Updated: December 2025</p>
         </div>
         
         {/* Background blobs using theme colors */}
@@ -38,25 +38,25 @@ export default function PrivacyPage() {
             <div className="bg-muted/30 p-6 rounded-2xl hover:bg-muted/50 transition-colors border border-transparent hover:border-primary/20 group">
               <UserCheck className="text-primary mb-4 group-hover:scale-110 transition-transform" size={28} />
               <h3 className="font-bold text-foreground mb-2">What we collect</h3>
-              <p className="text-sm text-muted-foreground">Only what’s necessary – name, email, school, and learning activity. Profile photos are optional.</p>
+              <p className="text-sm text-muted-foreground">Essential data: Name, email, organization role, and course progress. Profile photos are optional.</p>
             </div>
 
             <div className="bg-muted/30 p-6 rounded-2xl hover:bg-muted/50 transition-colors border border-transparent hover:border-primary/20 group">
               <ShieldCheck className="text-primary mb-4 group-hover:scale-110 transition-transform" size={28} />
               <h3 className="font-bold text-foreground mb-2">How we keep it safe</h3>
-              <p className="text-sm text-muted-foreground">Strong encryption, secure systems, and regular checks. We comply with the Kenya Data Protection Act.</p>
+              <p className="text-sm text-muted-foreground">HttpOnly-secured JWT tokens, server-side validation, and encrypted storage.</p>
             </div>
 
             <div className="bg-muted/30 p-6 rounded-2xl hover:bg-muted/50 transition-colors border border-transparent hover:border-primary/20 group">
               <Trash2 className="text-primary mb-4 group-hover:scale-110 transition-transform" size={28} />
               <h3 className="font-bold text-foreground mb-2">Your Control</h3>
-              <p className="text-sm text-muted-foreground">You can always ask us to delete or update your data. Parents must consent for users under 18.</p>
+              <p className="text-sm text-muted-foreground">You can request data deletion. Guardians manage data for students under 18 via GuardianLink.</p>
             </div>
 
             <div className="bg-muted/30 p-6 rounded-2xl hover:bg-muted/50 transition-colors border border-transparent hover:border-primary/20 group">
               <Server className="text-primary mb-4 group-hover:scale-110 transition-transform" size={28} />
               <h3 className="font-bold text-foreground mb-2">Trusted Partners</h3>
-              <p className="text-sm text-muted-foreground">Data is stored with reliable providers like Hostinger & Bunny.net. We never sell your personal data.</p>
+              <p className="text-sm text-muted-foreground">We use Paystack for payments, Jitsi for video, and AWS/MinIO for storage.</p>
             </div>
           </div>
         </div>
@@ -73,9 +73,9 @@ export default function PrivacyPage() {
             <div className="border-l-4 border-primary pl-6">
               <h3 className="text-xl font-bold text-foreground mb-3">1. Introduction</h3>
               <p>
-                E-vuka is an educational technology platform designed to bridge digital excellence with cultural heritage. 
+                Evuka is a practical e-learning platform enabling organizations to manage education through live events, quizzes, and assignments. 
                 This policy outlines how we collect, process, and store user data in compliance with the 
-                <strong> Kenya Data Protection Act (2019)</strong> and the <strong>General Data Protection Regulation (GDPR)</strong>.
+                <strong> Kenya Data Protection Act (2019)</strong> and international standards.
               </p>
             </div>
 
@@ -85,13 +85,13 @@ export default function PrivacyPage() {
               <div className="grid md:grid-cols-2 gap-4 not-prose">
                 <div className="p-4 rounded-xl bg-card border border-muted shadow-sm">
                   <span className="block text-xs font-bold text-primary uppercase tracking-wider mb-1">Data Controllers</span>
-                  <span className="font-semibold text-foreground">Schools & Institutions</span>
-                  <p className="text-sm mt-1">They determine the purpose of data collection for their students.</p>
+                  <span className="font-semibold text-foreground">Organizations (Schools)</span>
+                  <p className="text-sm mt-1">They own the taxonomy (Subjects/Levels) and manage student enrollment.</p>
                 </div>
                 <div className="p-4 rounded-xl bg-card border border-muted shadow-sm">
                   <span className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1">Data Processor</span>
-                  <span className="font-semibold text-foreground">E-vuka Platform</span>
-                  <p className="text-sm mt-1">We process data solely to provide and improve the platform's services.</p>
+                  <span className="font-semibold text-foreground">Evuka Platform</span>
+                  <p className="text-sm mt-1">We process data to deliver the dashboard, assessments, and live classes.</p>
                 </div>
               </div>
             </div>
@@ -102,19 +102,19 @@ export default function PrivacyPage() {
               <ul className="space-y-2 list-none pl-0">
                 <li className="flex gap-3">
                   <Database size={20} className="text-secondary shrink-0 mt-1" />
-                  <span><strong>Mandatory:</strong> Name, email, school/group association.</span>
+                  <span><strong>Identity Data:</strong> Name, email, phone number, and Organization ID.</span>
                 </li>
                 <li className="flex gap-3">
                   <Database size={20} className="text-secondary shrink-0 mt-1" />
-                  <span><strong>System Data:</strong> Device type, IP address, browser type, location.</span>
+                  <span><strong>Academic Data:</strong> Quiz scores, assignment submissions (files/text), and auto-saved notes.</span>
                 </li>
                 <li className="flex gap-3">
                   <Database size={20} className="text-secondary shrink-0 mt-1" />
-                  <span><strong>Learning Data:</strong> Courses, progress, assignments, forum interactions.</span>
+                  <span><strong>Activity Logs:</strong> Video timestamps (LessonProgress), live class attendance, and discussion replies.</span>
                 </li>
                 <li className="flex gap-3">
                   <Database size={20} className="text-secondary shrink-0 mt-1" />
-                  <span><strong>Payment Data:</strong> Processed securely via third parties. We do <strong>not</strong> store full card details.</span>
+                  <span><strong>Financial Data:</strong> Transaction history via Paystack. We do <strong>not</strong> store card details.</span>
                 </li>
               </ul>
             </div>
@@ -123,19 +123,25 @@ export default function PrivacyPage() {
             <div>
               <h3 className="text-xl font-bold text-foreground mb-3">4. Purpose of Processing & Retention</h3>
               <p>
-                We use data to personalize learning journeys through AI, support communication, and enable cultural content sharing. 
-                Data is kept only as long as necessary. Anonymized cultural content may be archived with consent for heritage preservation.
+                We use data to generate organizational reports, facilitate live video sessions via Jitsi Meet, and provide AI-assisted learning support via Google Gemini. 
+                Assignment files are stored securely using AWS S3/MinIO protocols and are retained only as long as the organization requires.
               </p>
             </div>
 
             {/* Section 7 */}
             <div>
               <h3 className="text-xl font-bold text-foreground mb-3">7. Third-Party Services</h3>
-              <p>We work with trusted processors who operate under strict Data Processing Agreements (DPAs):</p>
+              <p>We work with trusted processors to provide our core infrastructure:</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 not-prose">
-                {['Hostinger', 'Bunny.net', 'BuddyBoss', 'LearnDash'].map(partner => (
-                  <div key={partner} className="bg-muted px-4 py-2 rounded-lg text-center text-sm font-medium text-foreground">
-                    {partner}
+                {[
+                  { name: 'Paystack', role: 'Payments' },
+                  { name: 'Jitsi Meet', role: 'Live Video' },
+                  { name: 'Google Gemini', role: 'AI Assistant' },
+                  { name: 'AWS / MinIO', role: 'Cloud Storage' }
+                ].map(partner => (
+                  <div key={partner.name} className="bg-muted px-4 py-3 rounded-lg text-center border border-transparent hover:border-primary/20 transition-colors">
+                    <div className="text-sm font-bold text-foreground">{partner.name}</div>
+                    <div className="text-xs text-muted-foreground">{partner.role}</div>
                   </div>
                 ))}
               </div>
@@ -146,12 +152,12 @@ export default function PrivacyPage() {
               <h3 className="text-xl font-bold text-foreground mb-4">9. Your Rights</h3>
               <div className="grid md:grid-cols-2 gap-x-8 gap-y-2">
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Access and correct data</li>
-                  <li>Request deletion</li>
-                  <li>Withdraw consent</li>
+                  <li>Access personal performance reports</li>
+                  <li>Request account deletion</li>
+                  <li>Manage parent/guardian consent</li>
                 </ul>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Export learning progress</li>
+                  <li>Export notes and assignment data</li>
                   <li>File complaints with regulators</li>
                 </ul>
               </div>

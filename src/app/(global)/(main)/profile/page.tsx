@@ -129,24 +129,39 @@ export default function ProfilePage() {
           <main className="flex-1 space-y-6 lg:space-y-8">
 
             {/* Learning Stats */}
-            <section className="bg-white border border-gray-200 p-6 rounded-md shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-3">Learning Progress</h3>
-              <div className="grid grid-cols-3 gap-4">
+            <section className="bg-white border border-gray-200 p-4 sm:p-6 rounded-md shadow-sm">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-3">
+                Learning Progress
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 
-                <div className="bg-blue-50/50 p-4 text-center rounded-md border border-blue-200">
-                  <p className="text-3xl font-bold text-blue-600 mb-1">{profileData.enrolled_courses_count}</p>
-                  <p className="text-xs text-blue-800 uppercase tracking-wider">Enrolled</p>
+                <div className="bg-blue-50/50 p-3 sm:p-4 text-center rounded-md border border-blue-200">
+                  <p className="text-2xl sm:text-3xl font-bold text-blue-600 mb-1">
+                    {profileData.enrolled_courses_count}
+                  </p>
+                  <p className="text-xs text-blue-800 uppercase tracking-wider font-medium">
+                    Enrolled
+                  </p>
                 </div>
                 
-                <div className="bg-green-50/50 p-4 text-center rounded-md border border-green-200">
-                  <p className="text-3xl font-bold text-green-600 mb-1">{profileData.completed_courses_count}</p>
-                  <p className="text-xs text-green-800 uppercase tracking-wider">Completed</p>
+                <div className="bg-green-50/50 p-3 sm:p-4 text-center rounded-md border border-green-200">
+                  <p className="text-2xl sm:text-3xl font-bold text-green-600 mb-1">
+                    {profileData.completed_courses_count}
+                  </p>
+                  <p className="text-xs text-green-800 uppercase tracking-wider font-medium">
+                    Completed
+                  </p>
                 </div>
                 
-                <div className="bg-yellow-50/50 p-4 text-center rounded-md border border-yellow-200">
-                  <p className="text-3xl font-bold text-yellow-600 mb-1">{profileData.certificates_count}</p>
-                  <p className="text-xs text-yellow-800 uppercase tracking-wider">Certificates</p>
+                <div className="bg-yellow-50/50 p-3 sm:p-4 text-center rounded-md border border-yellow-200">
+                  <p className="text-2xl sm:text-3xl font-bold text-yellow-600 mb-1">
+                    {profileData.certificates_count}
+                  </p>
+                  <p className="text-xs text-yellow-800 uppercase tracking-wider font-medium">
+                    Certificates
+                  </p>
                 </div>
+
               </div>
             </section>
             

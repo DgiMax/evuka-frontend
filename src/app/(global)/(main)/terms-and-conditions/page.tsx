@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Shield, Scale, Book, CreditCard, Users, Copyright, ChevronRight } from "lucide-react";
+import { Shield, Scale, Book, CreditCard, Users, Copyright, ChevronRight, Bot } from "lucide-react";
 import { cn } from "@/lib/utils"; // Assuming you have a utility for class merging
 
 // --- Navigation Items ---
 const SECTIONS = [
   { id: "intro", title: "1. Purpose & Scope", icon: Book },
-  { id: "accounts", title: "2. User Accounts & Roles", icon: Users },
+  { id: "accounts", title: "2. Accounts & Roles", icon: Users },
   { id: "payments", title: "3. Payments & Wallets", icon: CreditCard },
-  { id: "content", title: "4. Ownership of Content", icon: Copyright },
+  { id: "content", title: "4. Ownership & AI", icon: Copyright }, // Added AI hint
   { id: "indigenous", title: "5. Indigenous Knowledge", icon: Shield },
   { id: "license", title: "6. Platform License", icon: Scale },
   { id: "takedown", title: "7. Enforcement & Takedown", icon: Scale },
@@ -47,11 +47,11 @@ export default function TermsPage() {
         <div className="container mx-auto px-4 relative z-10">
           <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">Terms of Service</h1>
           <p className="text-xl md:text-2xl text-primary-foreground/80 font-light max-w-2xl">
-            Governing your use of the E-vuka Platform, Content, and Community.
+            Governing your use of the Evuka Platform, Live Events, and Community.
           </p>
           <div className="mt-6 inline-flex items-center gap-2 text-sm bg-white/10 px-4 py-2 rounded-full backdrop-blur-md border border-white/20">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            Last Updated: September 2025
+            Last Updated: December 2025
           </div>
         </div>
         {/* Abstract Background Decoration */}
@@ -93,15 +93,15 @@ export default function TermsPage() {
               </h2>
               <div className="prose prose-gray max-w-none text-muted-foreground">
                 <p>
-                  This <strong>Intellectual Property & Content Use Policy</strong> governs how intellectual property (IP) is created, shared, and protected on the E-vuka Platform. It applies to:
+                  This <strong>Intellectual Property & Content Use Policy</strong> governs how intellectual property (IP) is created, shared, and protected on the Evuka Platform. It applies to all users accessing our services via the web or mobile applications.
                 </p>
                 <ul className="list-disc pl-5 space-y-2 mt-4">
-                  <li><strong>Instructors and Contributors</strong> uploading courses, tutorials, or cultural content.</li>
-                  <li><strong>Learners and Community Members</strong> accessing, using, or sharing content.</li>
-                  <li><strong>Partners and Institutions</strong> licensing or distributing E-vuka materials.</li>
+                  <li><strong>Organization Admins</strong> managing school taxonomies and student data.</li>
+                  <li><strong>Tutors</strong> hosting live classes and creating assessments.</li>
+                  <li><strong>Students & Guardians</strong> accessing coursework and tracking progress.</li>
                 </ul>
                 <p className="mt-4">
-                  E-vuka respects the rights of creators while ensuring that learners and communities benefit from safe, ethical, and culturally sensitive use of content.
+                  Evuka is designed to facilitate practical, event-driven learning while respecting the rights of all creators and communities.
                 </p>
               </div>
             </div>
@@ -109,20 +109,20 @@ export default function TermsPage() {
             {/* Accounts Card */}
             <div id="accounts" className="bg-card text-card-foreground rounded-2xl p-8 shadow-sm border border-muted/50">
               <h2 className="text-2xl font-bold text-primary mb-4 flex items-center gap-2">
-                2. User Accounts & Organizational Structure
+                2. User Accounts & Organizational Context
               </h2>
               <div className="prose prose-gray max-w-none text-muted-foreground space-y-4">
                 <p>
-                  E-vuka operates on a deep organizational structure. Users may hold different roles depending on the context:
+                  Evuka operates on a <strong>multi-tenant architecture</strong>. Your access to data is strictly contextual based on the Organization you are currently viewing.
                 </p>
                 <div className="grid md:grid-cols-2 gap-4 not-prose">
                   <div className="p-4 bg-muted/50 rounded-xl border border-muted">
                     <h3 className="font-semibold text-foreground">Organization Admins</h3>
-                    <p className="text-sm mt-1">Responsible for managing taxonomy (Levels, Subjects), students, and local content.</p>
+                    <p className="text-sm mt-1">Responsible for defining Categories, Levels (Grades), and managing the specific content taxonomy for their institution.</p>
                   </div>
                   <div className="p-4 bg-muted/50 rounded-xl border border-muted">
-                    <h3 className="font-semibold text-foreground">Tutors & Creators</h3>
-                    <p className="text-sm mt-1">Host live events via Jitsi and manage course materials.</p>
+                    <h3 className="font-semibold text-foreground">Guardians (Parents)</h3>
+                    <p className="text-sm mt-1">Linked via <strong>GuardianLink</strong> to oversee student progress and authorize payments for minors.</p>
                   </div>
                 </div>
               </div>
@@ -131,16 +131,16 @@ export default function TermsPage() {
             {/* Payments Card */}
             <div id="payments" className="bg-card text-card-foreground rounded-2xl p-8 shadow-sm border border-muted/50">
               <h2 className="text-2xl font-bold text-primary mb-4 flex items-center gap-2">
-                3. Payments, Wallets & Payouts
+                3. Payments, Wallets & Enrollment
               </h2>
               <div className="prose prose-gray max-w-none text-muted-foreground">
                 <p>
-                  We utilize <strong>Paystack</strong> as our primary payment gateway for card and mobile money transactions.
+                  We utilize <strong>Paystack</strong> as our secure payment gateway for all card and mobile money transactions.
                 </p>
                 <ul className="list-disc pl-5 mt-4 space-y-2">
-                  <li><strong>Enrollment:</strong> Immediate access is granted upon successful payment confirmation.</li>
-                  <li><strong>Wallet Ledger:</strong> A complete transaction history is maintained for every user and organization. Refunds and earnings are credited here.</li>
-                  <li><strong>Payouts:</strong> Tutors and Organizations must complete a two-step validation before requesting payouts to bank accounts or mobile wallets.</li>
+                  <li><strong>Two-Step Enrollment:</strong> Paid courses require enrollment validation followed by external payment initiation. Access is granted immediately upon webhook confirmation.</li>
+                  <li><strong>Wallet Ledger:</strong> Organizations maintain a transparent ledger of all incoming fees and outgoing payouts.</li>
+                  <li><strong>Refunds:</strong> Refunds are processed at the discretion of the specific Organization, subject to the platform's standard processing fees.</li>
                 </ul>
               </div>
             </div>
@@ -148,33 +148,33 @@ export default function TermsPage() {
             {/* IP Ownership Card */}
             <div id="content" className="bg-card text-card-foreground rounded-2xl p-8 shadow-sm border border-muted/50">
               <h2 className="text-2xl font-bold text-primary mb-4 flex items-center gap-2">
-                4. Ownership of Content
+                4. Ownership & AI Usage
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4 items-start">
                   <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 text-secondary font-bold">A</div>
                   <div>
-                    <h3 className="font-bold text-foreground">Instructor & Contributor Content</h3>
+                    <h3 className="font-bold text-foreground">Instructor Content</h3>
                     <p className="text-muted-foreground text-sm mt-1">
-                      Instructors retain ownership of the courses and materials they create. By uploading, you grant E-vuka a limited license to host and distribute it.
+                      Tutors retain ownership of their video materials and quiz content. By uploading to Evuka (via our S3/MinIO secure storage), you grant us a license to deliver this content to enrolled students.
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-4 items-start">
                   <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 text-secondary font-bold">B</div>
                   <div>
-                    <h3 className="font-bold text-foreground">Learner Content</h3>
+                    <h3 className="font-bold text-foreground">AI-Assisted Features</h3>
                     <p className="text-muted-foreground text-sm mt-1">
-                      Learners retain ownership of projects and forum posts but grant E-vuka permission to display them within the learning environment.
+                      Our platform uses <strong>Google Gemini</strong> to provide learning assistance. Suggestions generated by the AI are for educational purposes and do not constitute professional advice.
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-4 items-start">
                   <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 text-secondary font-bold">C</div>
                   <div>
-                    <h3 className="font-bold text-foreground">Platform Content</h3>
+                    <h3 className="font-bold text-foreground">Platform Assets</h3>
                     <p className="text-muted-foreground text-sm mt-1">
-                      Logos, code, and curated materials remain the sole property of E-vuka and DGIMAX Studios.
+                      The underlying code, designs, and the "Evuka" trademark remain the sole property of DGIMAX Studios.
                     </p>
                   </div>
                 </div>
@@ -189,16 +189,16 @@ export default function TermsPage() {
               </h2>
               <div className="space-y-4 relative z-10 text-foreground/80">
                 <p className="font-medium">
-                  We recognize that indigenous stories, traditions, and cultural expressions contributed through workshops are the intellectual property of the originating community.
+                  We recognize that indigenous stories, traditions, and cultural expressions contributed through community workshops are the intellectual property of the originating community.
                 </p>
                 <ul className="space-y-3">
                   <li className="flex gap-3 items-start">
                     <Shield className="text-primary shrink-0 mt-1" size={18} />
-                    <span>Such content cannot be misappropriated, sold, or reproduced outside the platform without consent.</span>
+                    <span>Such content cannot be misappropriated, sold, or reproduced outside the platform without explicit consent.</span>
                   </li>
                   <li className="flex gap-3 items-start">
                     <Shield className="text-primary shrink-0 mt-1" size={18} />
-                    <span>E-vuka commits to consultation with communities and custodians when showcasing or archiving cultural content.</span>
+                    <span>Evuka commits to consultation with communities and custodians when showcasing or archiving cultural content.</span>
                   </li>
                 </ul>
               </div>
@@ -207,17 +207,17 @@ export default function TermsPage() {
             {/* Licensing */}
             <div id="license" className="bg-card text-card-foreground rounded-2xl p-8 shadow-sm border border-muted/50">
               <h2 className="text-2xl font-bold text-primary mb-4 flex items-center gap-2">
-                6. License Granted to E-vuka
+                6. License Granted to Evuka
               </h2>
               <div className="prose prose-gray max-w-none text-muted-foreground">
-                <p>By contributing content, you grant E-vuka the right to:</p>
+                <p>By contributing content, you grant Evuka the right to:</p>
                 <ul className="list-none pl-0 space-y-2">
-                  <li className="flex items-center gap-2"><ChevronRight size={16} className="text-secondary"/> Host, reproduce, stream, and distribute your content within the platform.</li>
-                  <li className="flex items-center gap-2"><ChevronRight size={16} className="text-secondary"/> Translate or adapt content for accessibility (e.g., indigenous language support, AI captioning).</li>
-                  <li className="flex items-center gap-2"><ChevronRight size={16} className="text-secondary"/> Feature content in promotions, provided attribution is maintained.</li>
+                  <li className="flex items-center gap-2"><ChevronRight size={16} className="text-secondary"/> Host, secure, and stream your content via our video infrastructure.</li>
+                  <li className="flex items-center gap-2"><ChevronRight size={16} className="text-secondary"/> Adapt content for accessibility (e.g., AI-driven captioning and translation).</li>
+                  <li className="flex items-center gap-2"><ChevronRight size={16} className="text-secondary"/> Feature aggregated statistics in platform reports.</li>
                 </ul>
                 <p className="text-sm mt-4 italic">
-                  *This license is non-exclusive, meaning you may use your content elsewhere.
+                  *This license is non-exclusive, meaning you are free to use your own content elsewhere.
                 </p>
               </div>
             </div>
@@ -229,14 +229,15 @@ export default function TermsPage() {
               </h2>
               <div className="prose prose-gray max-w-none text-muted-foreground">
                 <p>
-                  E-vuka complies with the <strong>Kenya Copyright Act (2001, revised 2019)</strong>, GDPR, and international treaties (WIPO).
+                  Evuka complies with the <strong>Kenya Copyright Act</strong> and international IP standards. 
+                  We respond promptly to valid takedown requests regarding unauthorized content.
                 </p>
                 <p className="mt-4">
-                  If you believe your IP rights are infringed, submit a takedown request with supporting evidence. E-vuka will investigate promptly and remove verified infringing material.
+                  If you believe your IP rights are infringed, please submit a formal request.
                 </p>
                 
                 <div className="mt-8 p-6 bg-muted rounded-xl border border-muted-foreground/10">
-                  <h4 className="font-bold text-foreground mb-2">E-vuka Intellectual Property Office</h4>
+                  <h4 className="font-bold text-foreground mb-2">Evuka Intellectual Property Office</h4>
                   <p className="text-sm">Baricho Road, Ambar HSE, 2nd Floor, DGIMAX Studios</p>
                   <p className="text-sm mt-1">Email: <a href="mailto:inbox@digi-collektive.com" className="text-primary hover:underline">inbox@digi-collektive.com</a></p>
                 </div>
