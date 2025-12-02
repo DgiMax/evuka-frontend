@@ -31,7 +31,12 @@ const nextConfig = {
         port: "",
         pathname: "/media/**",
       },
-
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8080",
+        pathname: "/media/**",
+      },
       {
         protocol: "https",
         hostname: "placehold.co",

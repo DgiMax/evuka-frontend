@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link"; 
 import { useRouter } from "next/navigation";
-import { Progress } from "@/components/ui/progress";
+import EnrolledCourseCard from "./EnrolledCourseCard"
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api/axios";
 import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
@@ -40,56 +40,6 @@ const EmptyPlaceholder = ({ message }: { message: string }) => (
         <p className="text-gray-500 text-base italic text-center">{message}</p>
     </div>
 );
-
-const EnrolledCourseCard = ({ course }: { course: Course }) => {
-    const { activeSlug } = useActiveOrg(); 
-
-    const courseLearningHref = activeSlug
-        ? `/${activeSlug}/course-learning/${course.slug}`
-        : `/course-learning/${course.slug}`;
-
-    const PRIMARY_BLUE = "text-[#3B9FC9]"; 
-    const PROGRESS_BLUE = "bg-blue-600";
-
-    return (
-        <Link href={courseLearningHref} className="block group">
-            <div className="bg-white p-1 overflow-hidden border border-gray-200 h-full flex flex-col rounded-md shadow-sm hover:shadow-md transition-all duration-200">
-                
-                <div className="relative aspect-video bg-gray-100 w-full flex-shrink-0">
-                    <Image
-                        src={course.thumbnail || "/placeholder.svg"}
-                        alt={course.title}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-                        style={{ objectFit: "cover" }}
-                        className="group-hover:opacity-90 transition-opacity rounded-sm"
-                    />
-                </div>
-                
-                <div className="p-3 flex flex-col flex-grow">
-                    <h3 className={`font-bold text-base text-gray-800 mb-1 line-clamp-2 leading-tight ${PRIMARY_BLUE}`}>
-                        {course.title}
-                    </h3>
-                    <p className="text-xs text-gray-500 mb-3 line-clamp-1">
-                        {course.tutor || 'Instructor'}
-                    </p>
-                    
-                    <div className="mt-auto pt-2 border-t border-gray-100">
-                        <p className="text-sm text-gray-700 mb-1 font-medium text-right">
-                            {Math.round(course.progress || 0)}%
-                            <span className="text-gray-500 font-normal ml-1">Complete</span>
-                        </p>
-                        <Progress
-                            value={course.progress || 0}
-                            className="h-2.5 w-full bg-gray-200 rounded-full"
-                            indicatorClassName={PROGRESS_BLUE}
-                        />
-                    </div>
-                </div>
-            </div>
-        </Link>
-    );
-};
 
 const CourseList = ({ courses }: { courses: Course[] }) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

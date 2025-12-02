@@ -1,9 +1,8 @@
 "use client";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { LiveLesson } from './CourseLearningView'; 
-import { Video, Calendar, Clock, AlertCircle, Radio, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Video, Calendar, Clock, Radio, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface LiveDetailProps {
@@ -13,7 +12,14 @@ interface LiveDetailProps {
 }
 
 export default function LiveDetailComponent({ liveLesson, joinLiveSession, setIsJoiningLive }: LiveDetailProps) {
-    
+    // 1. Reactive state to ensure the UI updates automatically (e.g. when 10 mins before starts)
+    const [now, setNow] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 30000); // Update every 30s
+        return () => clearInterval(timer);
+    }, []);
+
     if (!liveLesson) {
         return (
             <div className="w-full aspect-video bg-secondary/10 border border-border rounded flex items-center justify-center text-muted-foreground">
@@ -22,19 +28,15 @@ export default function LiveDetailComponent({ liveLesson, joinLiveSession, setIs
         );
     }
 
-    // --- LOGIC CORRECTION ---
-    const lessonStart = new Date(`${liveLesson.date} ${liveLesson.start_time}`);
-    const lessonEnd = new Date(`${liveLesson.date} ${liveLesson.end_time}`); // Assuming end_time exists
-    const now = new Date();
+    // 2. Robust Date Parsing (Add 'T' to ensure ISO format works on all browsers)
+    const lessonStart = new Date(`${liveLesson.date}T${liveLesson.start_time}`);
+    const lessonEnd = new Date(`${liveLesson.date}T${liveLesson.end_time}`);
 
-    // 1. Is Past? (Now is after End Time)
-    const isPast = now > lessonEnd;
-
-    // 2. Is Ready/Live? (Now is between [Start - 10mins] and [End])
+    // 3. Logic: Students can join 10 minutes before start
     const tenMinutesBeforeStart = new Date(lessonStart.getTime() - 10 * 60 * 1000);
-    const isLiveOrReady = now >= tenMinutesBeforeStart && now <= lessonEnd;
 
-    // 3. Is Future? (Now is before [Start - 10mins])
+    const isPast = now > lessonEnd;
+    const isLiveOrReady = now >= tenMinutesBeforeStart && now <= lessonEnd;
     const isFuture = now < tenMinutesBeforeStart;
 
     const handleJoinClick = () => {
@@ -91,7 +93,10 @@ export default function LiveDetailComponent({ liveLesson, joinLiveSession, setIs
                             <div className="flex items-center justify-center gap-2 text-muted-foreground">
                                 <Clock className="w-5 h-5" />
                                 <span className="font-medium">
-                                    Starts: {lessonStart.toLocaleString()}
+                                    Starts: {lessonStart.toLocaleString(undefined, { 
+                                        weekday: 'short', month: 'short', day: 'numeric', 
+                                        hour: 'numeric', minute: 'numeric' 
+                                    })}
                                 </span>
                             </div>
                             <p className="text-sm text-muted-foreground">
