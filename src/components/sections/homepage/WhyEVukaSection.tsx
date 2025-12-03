@@ -72,7 +72,6 @@ export default function WhyEVukaSection() {
           Learning that connects culture, technology, and community.
         </p>
 
-        {/* RESPONSIVE GRID */}
         <div className="
           grid 
           grid-cols-1 

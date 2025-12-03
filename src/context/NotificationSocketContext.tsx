@@ -62,7 +62,7 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
         try {
             // 3. Simple GET request. 
             // The Backend ViewSet checks 'request.active_organization' automatically.
-            const response = await api.get('/notifications/'); 
+            const response = await api.get(`/notifications/`); 
             
             const data: NotificationItem[] = response.data;
             setNotifications(data);
