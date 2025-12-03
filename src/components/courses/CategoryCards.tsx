@@ -29,15 +29,21 @@ export const CategoryCards = ({ categories, onSelect }: CategoryCardProps) => (
 );
 
 export const ActiveCategoryHeader = ({ category, onBack }: { category: any; onBack: () => void }) => (
-    <div className="flex items-center gap-4 mb-6">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-6">
         <button 
             onClick={onBack}
-            className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors self-start sm:self-auto"
         >
-            <ArrowLeft size={16} />
-            Back to Categories
+            <div className="p-1 bg-gray-100 rounded-full group-hover:bg-gray-200 transition-colors">
+                <ArrowLeft size={16} />
+            </div>
+            <span className="whitespace-nowrap">Back to Categories</span>
         </button>
-        <div className="h-6 w-px bg-gray-300"></div>
-        <h2 className="text-2xl font-bold text-gray-900">{category.name}</h2>
+
+        <div className="hidden sm:block h-6 w-px bg-gray-300"></div>
+
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 break-words leading-tight">
+            {category.name}
+        </h2>
     </div>
 );
