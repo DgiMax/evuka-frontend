@@ -82,20 +82,30 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
   if (viewState.mode === 'CHILD' && viewState.activeParent && viewState.activeSub) {
     return (
       <div className="mb-8 animate-in fade-in slide-in-from-left-4 duration-300">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-6">
+          
           <button 
             onClick={onBack}
-            className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            className="group flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors w-full sm:w-auto"
           >
-            <Inbox className="w-4 h-4 rotate-180" /> 
-            Back to {viewState.activeParent.name}
+            <div className="p-1 bg-gray-100 rounded-full group-hover:bg-gray-200 transition-colors">
+                 <Inbox className="w-4 h-4 rotate-180" /> 
+            </div>
+            
+            <span className="truncate max-w-[200px] sm:max-w-[150px] block" title={`Back to ${viewState.activeParent.name}`}>
+                Back to {viewState.activeParent.name}
+            </span>
           </button>
-          <div className="h-6 w-px bg-gray-300"></div>
-          <h2 className="text-2xl font-bold text-gray-900">{viewState.activeSub.name}</h2>
+
+          <div className="hidden sm:block h-6 w-px bg-gray-300"></div>
+
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight break-words">
+            {viewState.activeSub.name}
+          </h2>
         </div>
       </div>
     );
-  }
+}
 
   return null;
 };
