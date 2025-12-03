@@ -102,7 +102,7 @@ export default function LogInPage() {
 
               <div className="text-right">
                 <Link 
-                  href="/forgot-password" 
+                  href="/reset-password" 
                   className={`text-sm ${PRIMARY_TEXT_CLASS} hover:underline`}
                 >
                   Forgot Password?
