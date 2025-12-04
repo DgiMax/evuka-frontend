@@ -12,10 +12,9 @@ export const CategoryCards = ({ categories, onSelect }: CategoryCardProps) => (
       <button
         key={cat.id}
         onClick={() => onSelect(cat)}
-        className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:border-[#2694C6] hover:shadow-md transition-all group text-center"
+        className="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-md hover:border-[#2694C6] hover:shadow transition-all group text-center"
       >
         <div className="h-12 w-12 bg-gray-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#e0f2fe] transition-colors overflow-hidden">
-             {/* If thumbnail exists, show it, otherwise show Icon */}
              {cat.thumbnail ? (
                  <img src={cat.thumbnail} alt={cat.name} className="h-full w-full object-cover" />
              ) : (
@@ -39,11 +38,5 @@ export const ActiveCategoryHeader = ({ category, onBack }: { category: any; onBa
             </div>
             <span className="whitespace-nowrap">Back to Categories</span>
         </button>
-
-        <div className="hidden sm:block h-6 w-px bg-gray-300"></div>
-
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 break-words leading-tight">
-            {category.name}
-        </h2>
     </div>
 );

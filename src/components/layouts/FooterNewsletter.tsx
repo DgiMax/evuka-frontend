@@ -52,7 +52,6 @@ export default function FooterNewsletter() {
           {/* Text Content */}
           <div className="max-w-xl">
             <h3 className="text-2xl font-bold tracking-tight text-foreground flex items-center justify-center lg:justify-start gap-2">
-              <Mail className="w-6 h-6 text-primary" />
               Subscribe to our newsletter
             </h3>
             <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
