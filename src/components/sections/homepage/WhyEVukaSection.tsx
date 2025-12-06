@@ -60,10 +60,9 @@ const dvukaFeatures = [
 
 export default function WhyEVukaSection() {
   return (
-    <section className="py-16 sm:py-24 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl text-center">
+    <section className="py-16 sm:px-8 sm:py-24 bg-white">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
-        {/* Header */}
         <h4 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-3">
           Why evuka?
         </h4>
@@ -77,12 +76,11 @@ export default function WhyEVukaSection() {
           grid-cols-1 
           sm:grid-cols-2 
           lg:grid-cols-3 
-          gap-4 
-          sm:gap-6
-          place-items-center
+          gap-6 
+          lg:gap-8
         ">
           {dvukaFeatures.map((feature) => (
-            <div key={feature.title} className="w-full max-w-sm">
+            <div key={feature.title} className="h-full sm:w-full **max-w-md mx-auto sm:max-w-none sm:mx-0**">
               <WhyEVukaComponent
                 title={feature.title}
                 description={feature.description}

@@ -29,26 +29,30 @@ export default async function OrganizationLayout({
         headers: {
           Cookie: cookieStore.toString(),
         },
+        validateStatus: (status) => status < 500, 
       }
     );
 
     status = response.data;
   } catch (error: any) {
-    if (error?.response?.status === 404) notFound();
-    redirect("/login");
-  }
+    console.error("Layout Check Error:", error);
+    redirect("/login"); 
+    }
 
   if (!status) {
     redirect("/login");
   }
 
-  if (!status.organization_exists) notFound();
-
-  if (!status.is_authenticated) {
-    redirect(`/login?redirect=/org/${organizationSlug}`);
+  if (status.organization_exists === false) {
+    notFound();
   }
 
-  if (!status.is_member) {
+  if (status.is_authenticated === false) {
+    const returnUrl = encodeURIComponent(`/${organizationSlug}`);
+    redirect(`/login?redirect=${returnUrl}`);
+  }
+
+  if (status.is_member === false) {
     redirect(`/organizations/browse/${organizationSlug}`);
   }
 

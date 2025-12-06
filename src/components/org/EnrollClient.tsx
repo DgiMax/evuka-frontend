@@ -100,7 +100,7 @@ export default function EnrollClient({ orgSlug }: { orgSlug: string }) {
       try {
         const [orgRes, levelsRes] = await Promise.all([
           api.get(`/organizations/${orgSlug}/`), 
-          api.get(`/organizations/${orgSlug}/levels/`)
+          api.get(`/organizations/${orgSlug}/public-levels/`)
         ]);
 
         setOrganization(orgRes.data);
@@ -110,8 +110,6 @@ export default function EnrollClient({ orgSlug }: { orgSlug: string }) {
 
       } catch (error) {
         toast.error("Failed to load enrollment details.");
-        console.error("API Fetch Error:", error);
-        router.push('/dashboard'); 
       } finally {
         setIsLoading(false);
       }

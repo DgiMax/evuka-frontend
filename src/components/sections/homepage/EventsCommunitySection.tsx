@@ -38,9 +38,13 @@ const EmptyState: React.FC<EmptyStateProps> = ({ message }) => (
 
 const LoadingSkeleton: React.FC = () => (
   <SkeletonTheme baseColor="#e5e7eb" highlightColor="#f3f4f6">
+    {/* FIXED: Changed to a standard grid that stacks on mobile */}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
       {[...Array(3)].map((_, index) => (
-        <div key={index} className="p-4 border rounded-lg shadow-sm">
+        <div
+          key={index}
+          className="p-4 border rounded-lg shadow-sm w-full"
+        >
           <Skeleton height={160} className="mb-4" />
           <Skeleton height={20} width="90%" className="mb-2" />
           <Skeleton count={2} className="mb-1" />
@@ -128,12 +132,19 @@ export default function EventsCommunitySection() {
             ) : error ? (
               <EmptyState message={error} />
             ) : events.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              // FIXED: Removed overflow/scroll logic.
+              // Used grid-cols-1 for mobile (vertical stack) and md:grid-cols-3 for desktop.
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                 {events.map((event) => (
-                  <EventCardComponent
+                  <div
                     key={event.slug}
-                    {...formatEventForCard(event)}
-                  />
+                    // FIXED: Removed fixed width (w-[280px]) so it fills the grid column naturally
+                    className="w-full"
+                  >
+                    <EventCardComponent
+                      {...formatEventForCard(event)}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (

@@ -81,9 +81,6 @@ export default function AnnouncementsListClient({ courseSlug }: Props) {
         }
     };
 
-    // --- Render ---
-    
-    // 2. Replaced the manual loading div with Skeleton
     if (isLoading) {
         return <AnnouncementsSkeleton />;
     }
@@ -92,7 +89,7 @@ export default function AnnouncementsListClient({ courseSlug }: Props) {
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
                         {contextName}
                     </h1>
                     <p className="text-gray-500 mt-1">

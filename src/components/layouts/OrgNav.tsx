@@ -11,6 +11,24 @@ import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
 import Image from "next/image";
 import { useNotifications } from "@/context/NotificationSocketContext"; 
 
+// Helper function to generate initials
+const getInitials = (name: string) => {
+    if (!name) return "";
+    
+    const words = name.trim().split(/\s+/);
+    
+    // If single word, take first 3 chars (e.g. Safaricom -> SAF)
+    if (words.length === 1) {
+        return name.slice(0, 3).toUpperCase();
+    }
+    
+    // If multiple words, take first letter of each (e.g. University of Nairobi -> UON)
+    return words
+        .map((word) => word[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 3);
+};
 
 export default function OrgNav() {
     const { user, loading, logout } = useAuth();
@@ -73,8 +91,17 @@ export default function OrgNav() {
                                     priority
                                 />
                             ) : (
+                                // UPDATED: Responsive Name Logic
                                 <span className="text-xl font-extrabold text-primary">
-                                    {orgName}
+                                    {/* Mobile: Show Initials (e.g. "UON") */}
+                                    <span className="md:hidden">
+                                        {getInitials(orgName)}
+                                    </span>
+
+                                    {/* Desktop: Show Full Name (truncated if very long) */}
+                                    <span className="hidden md:block truncate max-w-[200px] lg:max-w-xs">
+                                        {orgName}
+                                    </span>
                                 </span>
                             )}
                         </Link>

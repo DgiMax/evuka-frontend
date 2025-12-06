@@ -60,13 +60,12 @@ export default function GlobalNotificationFeedClient() {
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-            {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
                         Notifications
                         {unreadCount > 0 && (
-                            <span className="text-sm font-medium bg-blue-600 text-white px-3 py-1 rounded-full shadow-sm animate-pulse">
+                            <span className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1 rounded-full shadow-md animate-pulse">
                                 {unreadCount} new
                             </span>
                         )}

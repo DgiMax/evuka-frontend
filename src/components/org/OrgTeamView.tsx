@@ -178,7 +178,7 @@ export default function OrgTeamView() {
             Back to Organization
           </Button>
           
-          <h1 className="text-3xl font-bold text-foreground">Meet the Team</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">Meet the Team</h1>
           <p className="text-muted-foreground mt-2">The dedicated professionals driving our mission forward.</p>
         </div>
 

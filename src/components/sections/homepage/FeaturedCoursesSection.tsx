@@ -37,14 +37,17 @@ const EmptyState: React.FC<EmptyStateProps> = ({ message }) => (
 const LoadingSkeleton: React.FC = () => (
   <SkeletonTheme baseColor="#e5e7eb" highlightColor="#f3f4f6">
     <div
-      className="flex flex-nowrap space-x-5 overflow-x-auto scroll-smooth
-                 lg:grid lg:grid-cols-4 lg:gap-5 lg:space-x-0
-                 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      // FIXED: Using gap-4 instead of space-x-5 for tighter spacing
+      // FIXED: Added snap classes for smooth scrolling feel
+      className="flex flex-nowrap gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth
+               lg:grid lg:grid-cols-4 lg:gap-5 lg:space-x-0
+               [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-1"
     >
       {[...Array(4)].map((_, index) => (
         <div
           key={index}
-          className="snap-start shrink-0 w-[80vw] sm:w-[50vw] md:w-[280px] lg:w-auto p-2"
+          // FIXED: Changed w-[80vw] to w-[280px] to fix "too big" issue
+          className="snap-start shrink-0 w-[280px] lg:w-auto p-1"
         >
           <Skeleton height={150} className="rounded-lg mb-2" />
           <Skeleton height={20} width="90%" className="mb-2" />
@@ -88,10 +91,12 @@ export default function FeaturedCoursesSection() {
     fetchFeaturedCourses();
   }, [activeSlug, fetchFeaturedCourses]);
 
+  // FIXED: Layout logic updated to use gap instead of space-x for better control
   const baseCardContainerClasses = `
-    flex flex-nowrap space-x-5 overflow-x-auto scroll-smooth
-    lg:grid lg:grid-cols-4 lg:gap-5 lg:space-x-0
+    flex flex-nowrap gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth
+    lg:grid lg:grid-cols-4 lg:gap-5 
     [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]
+    px-1 pb-4
   `;
 
   const dynamicGridClasses =
@@ -100,18 +105,18 @@ export default function FeaturedCoursesSection() {
       : "";
 
   return (
-    <section className="py-12 sm:py-20 bg-background">
+    <section className="py-12 sm:py-20 sm:px-8 bg-background">
       <div className="container mx-auto px-6 max-w-7xl">
-        <div className="flex justify-between items-center mb-10">
-          <h4 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-2 leading-tight">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 space-y-4 sm:space-y-0 text-center sm:text-left">
+          <h4 className="text-xl sm:text-3xl font-extrabold text-foreground leading-tight mx-auto sm:mx-0">
             Featured Courses & Languages
           </h4>
 
           <Link
             href="/courses"
-            className="bg-secondary text-secondary-foreground font-semibold py-3 px-6 rounded hover:bg-secondary/90 transition duration-200 hidden sm:block"
+            className="bg-secondary text-secondary-foreground font-semibold py-2 px-4 rounded-md hover:bg-secondary/90 transition duration-200 hidden sm:block whitespace-nowrap"
           >
-            Explore All Courses
+            View All
           </Link>
         </div>
 
@@ -126,7 +131,9 @@ export default function FeaturedCoursesSection() {
             {courses.map((course) => (
               <div
                 key={course.slug}
-                className="snap-start shrink-0 w-[80vw] sm:w-[50vw] md:w-[280px] lg:w-auto"
+                // FIXED: Set fixed width (w-[280px]) to prevent card from being "too big" on mobile.
+                // snap-center makes it stop exactly in the middle or start of the screen.
+                className="snap-start shrink-0 w-[280px] lg:w-auto"
               >
                 <CourseCard
                   title={course.title}
@@ -135,6 +142,7 @@ export default function FeaturedCoursesSection() {
                   reviewCount={course.num_ratings}
                   imageSrc={course.thumbnail || "/images.png"}
                   courseHref={`/courses/${course.slug}`}
+                  className="!shadow-none !hover:shadow-none border border-border"
                 />
               </div>
             ))}
@@ -144,9 +152,9 @@ export default function FeaturedCoursesSection() {
         <div className="mt-8 text-center sm:hidden">
           <Link
             href="/courses"
-            className="bg-secondary text-secondary-foreground w-full max-w-xs block mx-auto font-semibold py-3 px-6 rounded-lg hover:bg-secondary/90 transition duration-200"
+            className="bg-secondary text-secondary-foreground w-full max-w-xs block mx-auto font-semibold py-3 px-6 rounded-md hover:bg-secondary/90 transition duration-200"
           >
-            Explore All Courses
+            View All
           </Link>
         </div>
       </div>

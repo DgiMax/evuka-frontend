@@ -11,6 +11,7 @@ interface CourseCardProps {
   reviewCount: number;
   imageSrc: string;
   courseHref: string;
+  className?: string; // Added this
 }
 
 export default function CourseCard({
@@ -20,6 +21,7 @@ export default function CourseCard({
   reviewCount,
   imageSrc,
   courseHref,
+  className, // Added this
 }: CourseCardProps) {
   const renderStars = () => {
     const fullStars = Math.round(rating);
@@ -36,15 +38,16 @@ export default function CourseCard({
   return (
     <Link
       href={courseHref}
-      className="block group max-w-xs rounded overflow-hidden px-1 py-1 bg-primary"
+      // Appended className to the end so you can override styles from the parent
+      className={`block group max-w-xs rounded overflow-hidden px-1 py-1 bg-primary ${className || ""}`}
     >
-      {/* Image */}
       <div className="relative h-32 w-full bg-muted rounded">
         <Image
           src={imageSrc}
           alt={title}
           fill
           priority
+          sizes="(max-width: 768px) 100vw, 25vw"
           className="object-cover rounded"
           onError={(e) => {
             (e.target as HTMLImageElement).src =
@@ -53,12 +56,15 @@ export default function CourseCard({
         />
       </div>
 
-      {/* Content */}
       <div className="bg-primary text-secondary-foreground text-center p-4">
-        <h3 className="text-xl font-extrabold mb-1 leading-tight">{title}</h3>
-        <p className="text-sm opacity-95 line-clamp-2 mb-3">{description}</p>
+        <h3 className="text-xl font-extrabold mb-1 leading-tight line-clamp-3">
+          {title}
+        </h3>
+        
+        <p className="text-sm opacity-95 line-clamp-2 mb-3">
+          {description}
+        </p>
 
-        {/* Rating */}
         <div className="flex items-center justify-center space-x-1">
           {renderStars()}
           <span className="text-sm font-semibold opacity-80">({reviewCount.toLocaleString()})</span>

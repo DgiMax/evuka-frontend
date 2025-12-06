@@ -14,9 +14,11 @@ export default function PartnerPage() {
                 <p className="text-lg text-blue-100 mb-8">
                     Don't just upload courses. Build an organization. Manage students, payments, and live events all in one platform.
                 </p>
-                <button className="bg-white text-[#2694C6] px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center gap-2">
+                <a 
+                    href="https://tutors.e-vuka.com/" 
+                    className="bg-white text-[#2694C6] px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center gap-2 max-w-[220px]">
                     Start Teaching <ArrowRight size={18} />
-                </button>
+                </a>
             </div>
             <div className="hidden md:block bg-white/10 p-8 rounded-2xl border border-white/20 backdrop-blur-sm">
                 <div className="space-y-4">
@@ -77,9 +79,11 @@ export default function PartnerPage() {
       <div className="bg-gray-50 py-20">
         <div className="container mx-auto px-4 text-center">
             <h2 className="text-2xl font-bold mb-6">Ready to expand your reach?</h2>
-            <button className="bg-[#2694C6] text-white px-8 py-3 rounded-lg font-bold hover:bg-[#1f7ba5] transition-colors">
+            <a 
+                href="https://tutors.e-vuka.com/create-org" 
+                className="bg-[#2694C6] text-white px-8 py-4 rounded-lg font-bold hover:bg-[#1f7ba5] transition-colors">
                 Register as an Organization
-            </button>
+            </a>
         </div>
       </div>
     </div>

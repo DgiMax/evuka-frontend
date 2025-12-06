@@ -35,11 +35,10 @@ export default function CartPage() {
         <div className="bg-background min-h-screen py-12">
             <div className="container mx-auto px-4 max-w-6xl">
                 
-                <h1 className="text-3xl font-bold text-foreground mb-8">Shopping Cart</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3 mb-8">Shopping Cart</h1>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     
-                    {/* LEFT: Cart Items List (2/3 width) */}
                     <div className="lg:col-span-2 space-y-4">
                         
                         {cartItems.length > 0 ? (

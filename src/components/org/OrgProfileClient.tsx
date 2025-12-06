@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useParams } from "next/navigation"; // 1. Import useParams
 import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api/axios";
 import {
   Loader2,
-  Link as LinkIcon,
   Facebook,
   Linkedin,
   Twitter,
@@ -16,20 +15,15 @@ import {
   Globe,
   CreditCard,
   ShieldCheck,
-  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { toast } from "sonner";
 
-// -----------------------------------------------------------------
-// --- Interfaces ---
-// -----------------------------------------------------------------
-
+// ... [Interfaces stay exactly the same] ...
 interface OrgStats {
   students: number;
   tutors: number;
@@ -60,25 +54,7 @@ interface OrganizationDetails {
   stats: OrgStats;
 }
 
-interface UserOrgMembership {
-  organization_slug: string;
-  role: string;
-  is_active: boolean;
-}
-
-// -----------------------------------------------------------------
-// --- Helper Components ---
-// -----------------------------------------------------------------
-
-function StatItem({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex flex-col items-center justify-center p-2">
-      <p className="text-3xl font-extrabold text-primary-foreground">{value.toLocaleString()}</p>
-      <p className="text-xs uppercase tracking-wide text-primary-foreground/70 font-medium">{label}</p>
-    </div>
-  );
-}
-
+// ... [Helper Components stay exactly the same] ...
 function SocialLink({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   const href = value.startsWith("http") ? value : `https://${value}`;
   return (
@@ -105,7 +81,6 @@ function JoinOrganizationButton({ org, currentMembership }: { org: OrganizationD
     const router = useRouter();
     const [isJoining, setIsJoining] = useState(false);
     
-    // Check if the user is an active student member
     const isStudentMember = currentMembership && currentMembership.role === 'student' && currentMembership.is_active;
     const requiresPayment = org.membership_price > 0;
 
@@ -121,7 +96,6 @@ function JoinOrganizationButton({ org, currentMembership }: { org: OrganizationD
         );
     }
     
-    // If the user is a member (but not a student, e.g., parent/tutor), show their role
     if (currentMembership && currentMembership.is_active) {
          return (
             <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100 py-1.5 px-4 text-sm font-bold shadow-none capitalize">
@@ -148,26 +122,33 @@ function JoinOrganizationButton({ org, currentMembership }: { org: OrganizationD
 
 export default function OrgProfileClient() {
   const router = useRouter();
-  const { activeSlug } = useActiveOrg();
+  const params = useParams(); // 2. Get params directly from URL
+  
+  // 3. Extract the slug from the URL. This is the "Source of Truth".
+  // Note: params.organizationSlug matches your folder name [organizationSlug]
+  const currentSlug = params?.organizationSlug as string;
+
   const { user } = useAuth();
   const [org, setOrg] = useState<OrganizationDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // We only need membership info to determine the button state
+  // Use the URL slug to find membership, not the potentially stale context slug
   const currentMembership = user?.organizations?.find(
-    (o: any) => o.organization_slug === activeSlug
+    (o: any) => o.organization_slug === currentSlug
   );
 
   const isActiveMember = currentMembership && currentMembership.is_active;
 
   const fetchOrgDetails = async () => {
-    if (!activeSlug) {
+    // 4. Guard clause using the URL slug
+    if (!currentSlug) {
         setIsLoading(false);
         return;
     }
     try {
       setIsLoading(true);
-      const res = await api.get(`/organizations/${activeSlug}/details/`); 
+      // 5. Fetch using the URL slug. This guarantees we fetch the page we are ON.
+      const res = await api.get(`/organizations/${currentSlug}/details/`); 
       setOrg(res.data);
     } catch (error) {
       console.error(error);
@@ -178,8 +159,10 @@ export default function OrgProfileClient() {
   };
 
   useEffect(() => {
+    setOrg(null);
     fetchOrgDetails();
-  }, [activeSlug]);
+    // 6. Depend on currentSlug (URL) instead of activeSlug (Context)
+  }, [currentSlug]);
 
   if (isLoading)
     return (
@@ -383,7 +366,7 @@ export default function OrgProfileClient() {
               {/* Membership Info (Always visible for context) */}
               <div className="bg-secondary/5 border border-border rounded-lg p-4">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-                     <CreditCard className="w-3.5 h-3.5 text-primary" /> Membership
+                      <CreditCard className="w-3.5 h-3.5 text-primary" /> Membership
                 </h3>
 
                 <div className="mb-4">

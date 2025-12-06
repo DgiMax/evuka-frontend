@@ -122,7 +122,7 @@ export default function CheckoutPage() {
             </Button>
         </div>
 
-        <h1 className="text-3xl font-bold text-foreground mb-8">Checkout</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3 mb-8">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           

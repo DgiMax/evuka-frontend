@@ -23,45 +23,44 @@ export default function WhyDVukaComponent({
 }: WhyDVukaProps) {
   return (
     <div
-      className={`max-w-sm rounded-xl overflow-hidden ${bgColor} text-white`}
-      style={{ borderRadius: "5px", padding: "5px" }}
+      className={`h-full flex flex-col border border-border overflow-hidden ${bgColor} text-white rounded-md transition-all duration-300 hover:scale-[1.01]`}
     >
-      {/* 1. Image Block */}
-      <div className="relative h-30 w-full">
+      <div className="relative w-full aspect-video">
         <Image
           src={imageSrc}
           alt={title}
           fill
           priority
+          sizes="(max-width: 768px) 100vw, 33vw"
           className="object-cover"
-          style={{ borderRadius: "5px 5px 0 0" }}
         />
       </div>
 
-      {/* 2. Content Block */}
-      <div className="p-2 text-center">
-        <h3 className="text-3xl mb-2" style={{ fontSize: "20px" }}>
-          {title}
-        </h3>
+      <div className="p-2 flex flex-col justify-between flex-grow text-center">
+        <div>
+          <h3 className="text-xl font-semibold mb-2">
+            {title}
+          </h3>
 
-        <p className="text-lg mb-1 font-normal" style={{ fontSize: "16px" }}>
-          {description}
-        </p>
+          <p className="text-base mb-2 opacity-90">
+            {description}
+          </p>
 
-        <p className="text-base mb-2 font-medium" style={{ fontSize: "15px" }}>
-          {items.map((item, index) => (
-            <Fragment key={item}>
-              {item}
-              {index < items.length - 1 && (
-                <span className="mx-1 opacity-70">&bull;</span>
-              )}
-            </Fragment>
-          ))}
-        </p>
+          <p className="text-sm mb-4 font-medium opacity-80">
+            {items.map((item, index) => (
+              <Fragment key={item}>
+                {item}
+                {index < items.length - 1 && (
+                  <span className="mx-1 opacity-70">&bull;</span>
+                )}
+              </Fragment>
+            ))}
+          </p>
+        </div>
 
         <Link
           href={buttonHref}
-          className="inline-block bg-primary-foreground text-lg py-2 px-8 rounded-[3px] text-accent-foreground transition duration-200 hover:bg-gray-100"
+          className="inline-block mt-auto bg-primary-foreground text-sm font-medium py-2 px-4 rounded-sm text-accent-foreground transition-colors duration-200 hover:bg-gray-100/90"
         >
           {buttonText}
         </Link>

@@ -61,7 +61,7 @@ export default function WishlistPage() {
         <div className="bg-background min-h-screen py-12">
             <div className="container mx-auto px-4 max-w-6xl">
                 
-                <h1 className="text-3xl font-bold text-foreground mb-8">My Wishlist</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3 mb-8">My Wishlist</h1>
 
                 {wishlist.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">

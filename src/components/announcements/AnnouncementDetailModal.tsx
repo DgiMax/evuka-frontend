@@ -23,75 +23,90 @@ interface ModalProps {
 export default function AnnouncementDetailModal({ announcement, onClose }: ModalProps) {
     if (!announcement) return null;
 
+    const dateObj = new Date(announcement.published_at);
+    
+    const dateStr = dateObj.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' });
+    const timeStr = dateObj.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' });
+
     return (
-        // Modal Overlay
-        // bg-white/20 + backdrop-blur-md creates the "frosted glass" look without the dark black overlay
+        // Overlay: Uses theme background with transparency/blur
         <div 
-            className="fixed inset-0 z-[100] flex justify-center items-center bg-white/20 backdrop-blur-md transition-all duration-300" 
+            className="fixed inset-0 z-[100] flex justify-center items-start bg-background/80 backdrop-blur-sm transition-all duration-300 p-4"
             onClick={onClose}
         >
             <div 
-                className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden transform transition-all duration-300 scale-100 border border-gray-200 ring-1 ring-black/5"
-                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+                // Top positioning, max height, flex column structure
+                className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden transform transition-all duration-300 top-[15%] md:top-[10%] translate-y-0 mt-8 sm:mt-12"
+                onClick={(e) => e.stopPropagation()}
             >
-                {/* Modal Header */}
-                <div className="flex-shrink-0 bg-gray-50/80 backdrop-blur-sm border-b border-gray-100 p-5 flex justify-between items-start">
-                    <div className="pr-8">
-                        <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                
+                {/* Gray Header (Combined Title + Author/Org Metadata) */}
+                <div className="flex-shrink-0 bg-muted/40 border-b border-border p-4 sm:p-5 flex justify-between items-start">
+                    <div className="space-y-2 pr-8">
+                        <h2 className="text-xl md:text-2xl font-bold text-foreground leading-snug">
                             {announcement.title}
                         </h2>
+                        
+                        {/* Author and Organization Group */}
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                            
+                            {/* Creator */}
+                            <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-blue-50/20 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                                <User className="w-3 h-3" />
+                                <span>{announcement.creator_name}</span>
+                            </div>
+                            
+                            {/* Organization (Optional) */}
+                            {announcement.organization_name && (
+                                <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                    <Briefcase className="w-3 h-3" />
+                                    <span>{announcement.organization_name}</span>
+                                </div>
+                            )}
+
+                            {/* Date/Time Group */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
+                                <div className="inline-flex items-center gap-1.5">
+                                    <Calendar className="w-3 h-3" />
+                                    <span>{dateStr}</span>
+                                </div>
+                                <span className="text-border">|</span>
+                                <div className="inline-flex items-center gap-1.5">
+                                    <Clock className="w-3 h-3" />
+                                    <span>{timeStr}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    
                     <button 
-                        onClick={onClose} 
-                        className="text-gray-400 hover:text-gray-600 hover:bg-white rounded-full p-2 transition-all shadow-sm border border-transparent hover:border-gray-200"
+                        onClick={onClose}
+                        className="text-muted-foreground hover:text-foreground hover:bg-background rounded-full p-2 transition-all shadow-sm"
                         aria-label="Close modal"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Modal Body - Scrollable */}
-                <div className="p-6 overflow-y-auto custom-scrollbar bg-white">
-                    {/* Metadata Badges */}
-                    <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-dashed border-gray-200 text-sm">
-                        <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                            <User className="w-3.5 h-3.5 mr-2" />
-                            <span className="font-medium">{announcement.creator_name}</span>
-                        </div>
-                        
-                        {announcement.organization_name && (
-                            <div className="inline-flex items-center px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
-                                <Briefcase className="w-3.5 h-3.5 mr-2" />
-                                <span className="font-medium">{announcement.organization_name}</span>
-                            </div>
-                        )}
-
-                        <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-200 ml-auto">
-                            <Calendar className="w-3.5 h-3.5 mr-2 text-gray-400" />
-                            <span>{new Date(announcement.published_at).toLocaleDateString()}</span>
-                            <span className="mx-2 text-gray-300">|</span>
-                            <Clock className="w-3.5 h-3.5 mr-2 text-gray-400" />
-                            <span>{new Date(announcement.published_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="prose prose-gray max-w-none text-gray-800 leading-relaxed">
+                {/* Scrollable Body (Content) */}
+                <div className="px-6 py-6 overflow-y-auto flex-1 min-h-0 bg-white">
+                    <div className="prose prose-sm md:prose-base max-w-none text-foreground/90 leading-relaxed whitespace-pre-wrap">
                         <p className="whitespace-pre-wrap font-normal text-base">
                             {announcement.content}
                         </p>
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="flex-shrink-0 p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
-                    <button 
+                {/* Gray Footer */}
+                <div className="flex-shrink-0 p-4 border-t border-border bg-muted/40 flex justify-end">
+                    <button
                         onClick={onClose}
-                        className="px-5 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm hover:shadow active:scale-95"
+                        className="px-5 py-2 bg-background border border-border rounded-lg text-sm font-medium text-foreground hover:bg-gray-50 transition-all shadow-sm"
                     >
                         Close
                     </button>
                 </div>
+
             </div>
         </div>
     );

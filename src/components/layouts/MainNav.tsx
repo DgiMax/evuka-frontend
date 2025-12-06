@@ -119,7 +119,6 @@ export default function MainNav() {
 
   return (
     <>
-      {/* TOP BAR - Hidden on mobile */}
       <div className="bg-primary text-primary-foreground text-sm py-2 px-4 hidden lg:flex justify-end items-center space-x-2">
         <Link href="https://tutors.e-vuka.com/" className="hover:underline">
           Teach on evuka
@@ -130,16 +129,11 @@ export default function MainNav() {
         </Link>
       </div>
 
-      {/* MAIN NAV */}
       <nav className="border-b border-border bg-background z-50 relative">
         <div className="container mx-auto px-4 lg:px-6">
-          {/* Flex-Wrap allows items to wrap on mobile.
-             Gap-y handles vertical spacing when wrapped.
-          */}
-          <div className="flex flex-wrap items-center justify-between py-3 md:py-0 md:h-20 gap-y-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between py-3 md:py-0 md:h-20">
             
-            {/* --- 1. LEFT: LOGO & NAV LINKS (Order 1 on all screens) --- */}
-            <div className="flex items-center space-x-4 lg:space-x-8 order-1">
+            <div className="flex items-center justify-between w-full md:w-auto md:order-1">
               <Link href="/" className="flex-shrink-0">
                 <img
                   src="/logo.png"
@@ -147,9 +141,37 @@ export default function MainNav() {
                   className="h-8 md:h-10 w-auto object-contain"
                 />
               </Link>
+              
+              <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0 md:hidden">
+                {!loading && user && (
+                  <Link
+                    href={notificationsHref}
+                    className="relative p-2 rounded-full hover:bg-accent"
+                  >
+                    <Bell className="w-6 h-6 text-gray-700" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 text-xs font-bold bg-red-600 text-white px-2 py-0.5 rounded-full">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                )}
 
-              {/* Desktop links */}
-              <div className="hidden lg:flex items-center space-x-6 font-medium">
+                <CartButton />
+
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="p-2 rounded-md bg-transparent hover:bg-transparent focus:outline-none focus:ring-0 active:outline-none active:ring-0"
+                >
+                  {isMenuOpen ? (
+                    <X className="w-6 h-6" />
+                  ) : (
+                    <Menu className="w-6 h-6" />
+                  )}
+                </button>
+              </div>
+
+              <div className="hidden lg:flex items-center space-x-6 font-medium md:order-2">
                 {navLinks.map((l) => (
                   <Link
                     key={l.name}
@@ -161,8 +183,7 @@ export default function MainNav() {
                 ))}
               </div>
 
-              {/* Medium screens dropdown (Tablet) */}
-              <div className="relative hidden md:block lg:hidden">
+              <div className="relative hidden md:block lg:hidden md:order-2">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center font-medium p-2 hover:text-primary"
@@ -197,9 +218,8 @@ export default function MainNav() {
               </div>
             </div>
 
-            <div className="order-3 md:order-2 w-full md:w-auto md:flex-grow md:max-w-lg md:mx-6 relative">
+            <div className="w-full mt-3 md:mt-0 md:flex-grow md:max-w-lg md:mx-6 relative md:order-2">
               <div className="relative w-full">
-                {/* Search Icon - Vertically Centered */}
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                 
                 <input
@@ -212,13 +232,11 @@ export default function MainNav() {
                   onBlur={() => setTimeout(() => setIsSearchActive(false), 200)}
                 />
 
-                {/* Loader - Vertically Centered */}
                 {isSearching && (
                   <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-primary" />
                 )}
               </div>
 
-              {/* Search Results Dropdown */}
               {isSearchActive && (
                 <div className="absolute top-full left-0 right-0 mt-2 z-50">
                   <SearchResultDisplay
@@ -231,8 +249,7 @@ export default function MainNav() {
               )}
             </div>
 
-            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0 order-2 md:order-3">
-              {/* Bell icon */}
+            <div className="hidden md:flex items-center space-x-2 sm:space-x-4 flex-shrink-0 md:order-3">
               {!loading && user && (
                 <Link
                   href={notificationsHref}
@@ -247,11 +264,10 @@ export default function MainNav() {
                 </Link>
               )}
 
-              {/* Header menu (desktop) */}
               {!loading && user && <HeaderMenu />}
 
               {!user && (
-                <div className="hidden md:flex items-center space-x-4">
+                <div className="flex items-center space-x-4">
                   <Link href="/login" className="hover:text-primary font-medium">
                     Login
                   </Link>
@@ -265,24 +281,11 @@ export default function MainNav() {
               )}
 
               <CartButton />
-
-              {/* Mobile menu toggle */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:hidden p-2 rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {isMenuOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
-              </button>
             </div>
 
           </div>
         </div>
 
-        {/* MOBILE MENU DROPDOWN */}
         {isMenuOpen && (
           <div className="md:hidden animate-slide-down border-t border-b border-border bg-background absolute w-full z-40 shadow">
             <div className="px-4 pt-2 pb-6 space-y-2">
@@ -300,7 +303,6 @@ export default function MainNav() {
 
               <hr className="my-2 border-border" />
 
-              {/* Auth Mobile Links */}
               {!loading && user ? (
                 <>
                   <div className="px-2 py-2">
@@ -316,7 +318,7 @@ export default function MainNav() {
                   </Link>
 
                   <Link
-                    href="/announcemenst"
+                    href="/announcements"
                     className="block px-3 py-2 hover:bg-accent rounded-md"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -371,7 +373,6 @@ export default function MainNav() {
         )}
       </nav>
 
-      {/* ANIMATION STYLES */}
       <style jsx global>{`
         @keyframes slide-down {
           from {
