@@ -58,7 +58,7 @@ export default function VisionImpactSection() {
                 poster="/video-thumbnail.jpg"
                 onClick={toggleAudio}
               >
-                <source src="/evuka_inro.mp4" type="video/mp4" />
+                <source src="/evuka_intro.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
 
@@ -87,7 +87,7 @@ export default function VisionImpactSection() {
             </p>
 
             <Link
-              href="#"
+              href="/work-with-us"
               className="inline-block bg-primary text-primary-foreground font-semibold py-3 px-8 rounded-md hover:bg-primary/90 transition duration-200"
             >
               Be Part of the Vision
