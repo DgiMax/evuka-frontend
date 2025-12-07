@@ -30,7 +30,9 @@ export interface CourseDetails {
   price: string;
   thumbnail: string;
   instructor: {
-    instructor_name: string;
+    username: string;
+    creator_name: string;
+    bio: string;
   };
   is_enrolled: boolean;
 }

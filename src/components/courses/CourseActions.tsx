@@ -24,7 +24,7 @@ export function CourseActions({ course }: CourseActionsProps) {
       type: 'course',
       slug: course.slug,
       title: course.title,
-      instructor_name: course.instructor?.instructor_name || 'Unknown Instructor',
+      instructor_name: course.instructor?.creator_name || 'Unknown Instructor',
       price: `KES ${course.price}`,
       priceValue: coursePrice,
       thumbnail: course.thumbnail,

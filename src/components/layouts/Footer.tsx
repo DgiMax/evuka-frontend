@@ -32,7 +32,7 @@ const QUICK_LINKS: NavLink[] = [
 ];
 
 const CREATOR_LINKS: NavLink[] = [
-  { href: 'https://e-vuka.com/onboarding', text: 'Start Creating' },
+  { href: 'https://tutors.e-vuka.com/onboarding', text: 'Start Creating' },
   { href: '/work-with-us', text: 'Partner With Us' },
   { href: '/organizations/browse', text: 'Organizations' },
 ];

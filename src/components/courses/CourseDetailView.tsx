@@ -8,6 +8,7 @@ import { CourseActions } from '@/components/courses/CourseActions';
 import api from "@/lib/api/axios";
 import { useAuth } from "@/context/AuthContext";
 import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
+import Link from "next/link";
 import CourseDetailSkeleton from "@/components/skeletons/CourseDetailSkeleton";
 
 type IconProps = {
@@ -55,7 +56,8 @@ export type CourseDetails = {
   promo_video: string;
   thumbnail: string;
   instructor: {
-    instructor_name: string;
+    username: string;
+    creator_name: string;
     bio: string;
   };
   organization_name: string;
@@ -152,11 +154,7 @@ const CourseDetailsLoading = () => (
     </div>
   </div>
 );
-// --- End Sub-components ---
 
-
-// --- MAIN VIEW COMPONENT ---
-// ✅ RENAMED: from CourseDetailsPage to CourseDetailView
 export default function CourseDetailView() { 
   const params = useParams(); 
   const slug = params.slug as string; 
@@ -243,9 +241,18 @@ export default function CourseDetailView() {
             
             <p className="text-sm text-gray-500 mb-6">
               Instructor:{' '}
-              <a href="#" className="font-semibold text-[#2694C6] hover:underline">
-                {course.instructor?.instructor_name || 'Unknown Instructor'}
-              </a>
+              {course.instructor?.username ? (
+                <Link 
+                  href={`/tutor-profile/${course.instructor.username}`} 
+                  className="font-semibold text-[#2694C6] hover:underline"
+                >
+                  {course.instructor?.creator_name || 'Unknown Instructor'}
+                </Link>
+              ) : (
+                <span className="font-semibold text-gray-500 cursor-default">
+                  {course.instructor?.creator_name || 'Unknown Instructor'}
+                </span>
+              )}
               {' '} — {course.instructor?.bio || 'No bio available.'}
             </p>
             <p className="text-sm text-gray-500 mb-6">
