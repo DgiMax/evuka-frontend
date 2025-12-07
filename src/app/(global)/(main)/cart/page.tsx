@@ -129,15 +129,23 @@ export default function CartPage() {
                             </CardContent>
 
                             <CardFooter className="p-6 pt-0 flex-col gap-4">
-                                <Button 
-                                    className="w-full h-12 text-base font-bold shadow-none" 
-                                    asChild 
-                                    disabled={isCartEmpty}
-                                >
-                                    <Link href={isCartEmpty ? "#" : "/checkout"}>
+                                {isCartEmpty ? (
+                                    <Button 
+                                        className="w-full h-12 text-base font-bold shadow-none" 
+                                        disabled={true}
+                                    >
                                         Proceed to Checkout <ArrowRight className="w-4 h-4 ml-2" />
-                                    </Link>
-                                </Button>
+                                    </Button>
+                                ) : (
+                                    <Button 
+                                        className="w-full h-12 text-base font-bold shadow-none" 
+                                        asChild
+                                    >
+                                        <Link href="/checkout">
+                                            Proceed to Checkout <ArrowRight className="w-4 h-4 ml-2" />
+                                        </Link>
+                                    </Button>
+                                )}
                                 
                                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground w-full">
                                     <ShieldCheck className="w-3.5 h-3.5 text-green-600" />

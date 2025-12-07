@@ -100,7 +100,15 @@ export default function CheckoutPage() {
 
       const paymentData = paymentResponse.data;
 
-      // 3. Redirect
+      // 🟢 HANDLE FREE ORDER (Bypass Paystack)
+      if (paymentData.free_order) {
+        toast.success("Enrollment successful!");
+        // Redirect to the dashboard or the URL provided by backend
+        router.push(paymentData.redirect_url || "/dashboard/learning");
+        return; 
+      }
+
+      // 🟢 HANDLE PAID ORDER (Redirect to Paystack)
       if (paymentData.payment_url) {
         window.location.href = paymentData.payment_url;
       } else {
@@ -127,7 +135,7 @@ export default function CheckoutPage() {
     <div className="bg-background min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-6xl">
         
-        {/* 🟢 Back Button (To Cart) */}
+        {/* Back Button (To Cart) */}
         <div className="mb-6">
             <Button 
                 variant="ghost" 
@@ -143,7 +151,7 @@ export default function CheckoutPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* LEFT: Payment Methods (2/3 width) */}
+          {/* LEFT: Contact & Payment (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
             <Card className="shadow-none border-border">
               <CardHeader className="pb-4 border-b border-border/50">
@@ -167,46 +175,50 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            <Card className="shadow-none border-border">
-              <CardHeader className="pb-4 border-b border-border/50">
-                <CardTitle className="text-xl">Payment Method</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    { id: "card", label: "Credit / Debit Card", sub: "Instant processing", Icon: CardIcon },
-                    { id: "mobile_money_mpesa", label: "M-Pesa", sub: "Pay via Mobile", Icon: MpesaIcon },
-                  ].map(({ id, label, sub, Icon }) => (
-                    <div 
-                        key={id} 
-                        onClick={() => setPaymentMethod(id)}
-                        className={cn(
-                            "flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all hover:bg-muted/20 relative overflow-hidden",
-                            paymentMethod === id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border"
-                        )}
-                    >
-                        <div className={cn("p-2 rounded-full shrink-0", paymentMethod === id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-                            <Icon className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="font-semibold text-sm text-foreground">{label}</p>
-                            <p className="text-xs text-muted-foreground">{sub}</p>
-                        </div>
-                        {paymentMethod === id && (
-                            <div className="absolute top-2 right-2">
-                                <CheckCircle className="w-4 h-4 text-primary" />
-                            </div>
-                        )}
+            {/* 🟢 HIDE Payment Methods if Total is 0 */}
+            {total > 0 && (
+              <Card className="shadow-none border-border">
+                <CardHeader className="pb-4 border-b border-border/50">
+                  <CardTitle className="text-xl">Payment Method</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[
+                      { id: "card", label: "Credit / Debit Card", sub: "Instant processing", Icon: CardIcon },
+                      { id: "mobile_money_mpesa", label: "M-Pesa", sub: "Pay via Mobile", Icon: MpesaIcon },
+                    ].map(({ id, label, sub, Icon }) => (
+                      <div 
+                          key={id} 
+                          onClick={() => setPaymentMethod(id)}
+                          className={cn(
+                              "flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all hover:bg-muted/20 relative overflow-hidden",
+                              paymentMethod === id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border"
+                          )}
+                      >
+                          <div className={cn("p-2 rounded-full shrink-0", paymentMethod === id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                              <Icon className="w-5 h-5" />
+                          </div>
+                          <div>
+                              <p className="font-semibold text-sm text-foreground">{label}</p>
+                              <p className="text-xs text-muted-foreground">{sub}</p>
+                          </div>
+                          {paymentMethod === id && (
+                              <div className="absolute top-2 right-2">
+                                  <CheckCircle className="w-4 h-4 text-primary" />
+                              </div>
+                          )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+                <CardFooter className="bg-muted/20 p-4 border-t border-border/50">
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground w-full">
+                        <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                        <span>Transactions are secured by Paystack</span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
-                <span>Transactions are secured by Paystack</span>
-            </div>
+                </CardFooter>
+              </Card>
+            )}
           </div>
 
           {/* RIGHT: Order Summary (1/3 width) */}
@@ -230,7 +242,8 @@ export default function CheckoutPage() {
                                     <span className="text-xs text-muted-foreground capitalize">{item.type}</span>
                                 </div>
                                 <p className="font-semibold text-foreground whitespace-nowrap">
-                                    {item.price}
+                                    {/* Display Free if 0 */}
+                                    {item.priceValue === 0 ? "Free" : item.price}
                                 </p>
                             </div>
                         ))}
@@ -266,9 +279,16 @@ export default function CheckoutPage() {
                             <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processing...
                         </>
                     ) : (
-                        <>
-                            Pay KES {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <ArrowRight className="w-4 h-4 ml-2" />
-                        </>
+                        // 🟢 CHECK TOTAL HERE FOR BUTTON TEXT
+                        total === 0 ? (
+                           <>
+                              Enroll for Free <ArrowRight className="w-4 h-4 ml-2" />
+                           </>
+                        ) : (
+                           <>
+                              Pay KES {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <ArrowRight className="w-4 h-4 ml-2" />
+                           </>
+                        )
                     )}
                 </Button>
               </CardFooter>
