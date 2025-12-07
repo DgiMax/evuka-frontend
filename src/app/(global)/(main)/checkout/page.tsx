@@ -104,7 +104,7 @@ export default function CheckoutPage() {
       if (paymentData.free_order) {
         toast.success("Enrollment successful!");
         // Redirect to the dashboard or the URL provided by backend
-        router.push(paymentData.redirect_url || "/dashboard/learning");
+        router.push(paymentData.redirect_url || "/dashboard");
         return; 
       }
 
