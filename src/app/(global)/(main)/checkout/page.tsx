@@ -14,7 +14,6 @@ import { toast } from 'sonner';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// --- SVG ICONS ---
 const MpesaIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -31,9 +30,8 @@ const CardIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   </svg>
 );
 
-// --- CHECKOUT PAGE COMPONENT ---
 export default function CheckoutPage() {
-  const { cartItems } = useCart();
+  const { cartItems, clearCart } = useCart();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -77,7 +75,6 @@ export default function CheckoutPage() {
     setIsLoading(true);
 
     try {
-      // 1. Create Order
       const orderResponse = await api.post("/orders/", {
         items: cartItems.map((item) => ({
           ...(item.type === "course" ? { course: item.slug } : { event: item.slug }),
@@ -89,7 +86,6 @@ export default function CheckoutPage() {
       const order = orderResponse.data;
       const orderId = order.id;
 
-      // 2. Initiate Payment
       const paymentResponse = await api.post(
         `/payments/initiate/${orderId}/`,
         { 
@@ -100,15 +96,13 @@ export default function CheckoutPage() {
 
       const paymentData = paymentResponse.data;
 
-      // 🟢 HANDLE FREE ORDER (Bypass Paystack)
       if (paymentData.free_order) {
         toast.success("Enrollment successful!");
-        // Redirect to the dashboard or the URL provided by backend
+        clearCart(); 
         router.push(paymentData.redirect_url || "/dashboard");
         return; 
       }
 
-      // 🟢 HANDLE PAID ORDER (Redirect to Paystack)
       if (paymentData.payment_url) {
         window.location.href = paymentData.payment_url;
       } else {
@@ -135,29 +129,27 @@ export default function CheckoutPage() {
     <div className="bg-background min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-6xl">
         
-        {/* Back Button (To Cart) */}
         <div className="mb-6">
-            <Button 
-                variant="ghost" 
-                onClick={() => router.push('/cart')}
-                className="pl-0 text-muted-foreground hover:text-foreground hover:bg-transparent group"
-            >
-                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                Back to Cart
-            </Button>
+          <Button 
+            variant="ghost" 
+            onClick={() => router.push('/cart')}
+            className="pl-0 text-muted-foreground hover:text-foreground hover:bg-transparent group"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+            Back to Cart
+          </Button>
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3 mb-8">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* LEFT: Contact & Payment (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="shadow-none border-border">
-              <CardHeader className="pb-4 border-b border-border/50">
+            <Card className="shadow-none border-border p-2">
+              <CardHeader className="pb-2 border-b border-border/50">
                 <CardTitle className="text-xl">Contact Information</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-2">
                 <div className="grid w-full items-center gap-1.5">
                   <Label htmlFor="email">Email Address for Receipt</Label>
                   <Input 
@@ -175,7 +167,6 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            {/* 🟢 HIDE Payment Methods if Total is 0 */}
             {total > 0 && (
               <Card className="shadow-none border-border">
                 <CardHeader className="pb-4 border-b border-border/50">
@@ -195,38 +186,37 @@ export default function CheckoutPage() {
                               paymentMethod === id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border"
                           )}
                       >
-                          <div className={cn("p-2 rounded-full shrink-0", paymentMethod === id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-                              <Icon className="w-5 h-5" />
-                          </div>
-                          <div>
-                              <p className="font-semibold text-sm text-foreground">{label}</p>
-                              <p className="text-xs text-muted-foreground">{sub}</p>
-                          </div>
-                          {paymentMethod === id && (
-                              <div className="absolute top-2 right-2">
-                                  <CheckCircle className="w-4 h-4 text-primary" />
-                              </div>
-                          )}
+                        <div className={cn("p-2 rounded-full shrink-0", paymentMethod === id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                            <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-sm text-foreground">{label}</p>
+                            <p className="text-xs text-muted-foreground">{sub}</p>
+                        </div>
+                        {paymentMethod === id && (
+                            <div className="absolute top-2 right-2">
+                                <CheckCircle className="w-4 h-4 text-primary" />
+                            </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </CardContent>
                 <CardFooter className="bg-muted/20 p-4 border-t border-border/50">
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground w-full">
-                        <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
-                        <span>Transactions are secured by Paystack</span>
+                      <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                      <span>Transactions are secured by Paystack</span>
                     </div>
                 </CardFooter>
               </Card>
             )}
           </div>
 
-          {/* RIGHT: Order Summary (1/3 width) */}
           <div className="lg:col-span-1">
             <Card className="shadow-none border-border sticky top-6 bg-muted/20">
               <CardHeader className="pb-4 border-b border-border/50">
                 <CardTitle className="text-lg flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5" /> Order Summary
+                  <ShoppingCart className="w-5 h-5" /> Order Summary
                 </CardTitle>
               </CardHeader>
               
@@ -242,7 +232,6 @@ export default function CheckoutPage() {
                                     <span className="text-xs text-muted-foreground capitalize">{item.type}</span>
                                 </div>
                                 <p className="font-semibold text-foreground whitespace-nowrap">
-                                    {/* Display Free if 0 */}
                                     {item.priceValue === 0 ? "Free" : item.price}
                                 </p>
                             </div>
@@ -279,15 +268,14 @@ export default function CheckoutPage() {
                             <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processing...
                         </>
                     ) : (
-                        // 🟢 CHECK TOTAL HERE FOR BUTTON TEXT
                         total === 0 ? (
-                           <>
-                              Enroll for Free <ArrowRight className="w-4 h-4 ml-2" />
-                           </>
+                            <>
+                                Enroll for Free <ArrowRight className="w-4 h-4 ml-2" />
+                            </>
                         ) : (
-                           <>
-                              Pay KES {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <ArrowRight className="w-4 h-4 ml-2" />
-                           </>
+                            <>
+                                Pay KES {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <ArrowRight className="w-4 h-4 ml-2" />
+                            </>
                         )
                     )}
                 </Button>
