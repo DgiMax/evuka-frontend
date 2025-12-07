@@ -142,14 +142,14 @@ const Footer: React.FC = () => {
 
                         <div className="w-full flex flex-col items-center md:items-start mt-auto">
                             <h4 className="font-bold text-foreground text-base mb-4">Follow Us</h4>
-                            <div className="flex items-center gap-4 justify-center md:justify-start">
+                            <div className="grid grid-cols-2 gap-4 w-fit mx-auto md:mx-0">
                               {SOCIAL_LINKS.map((social) => (
                                 <a
                                   key={social.name}
                                   href={social.href}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="p-2.5 rounded-md bg-background border border-border text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200"
+                                  className="p-2.5 rounded-md bg-background border border-border text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 flex items-center justify-center"
                                   aria-label={social.name}
                                 >
                                   <social.icon className="w-5 h-5" />

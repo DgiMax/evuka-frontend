@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // --- SVG ICONS ---
 const MpesaIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -36,7 +38,14 @@ export default function CheckoutPage() {
   const router = useRouter();
 
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [email, setEmail] = useState(user?.email || "");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -52,6 +61,11 @@ export default function CheckoutPage() {
   const handlePayment = async () => {
     if (!user) {
       toast.error("You must be logged in to complete the purchase.");
+      return;
+    }
+
+    if (!email) {
+      toast.error("Please enter an email address for the receipt.");
       return;
     }
 
@@ -78,7 +92,10 @@ export default function CheckoutPage() {
       // 2. Initiate Payment
       const paymentResponse = await api.post(
         `/payments/initiate/${orderId}/`,
-        { payment_method: paymentMethod }
+        { 
+          payment_method: paymentMethod,
+          email: email
+        }
       );
 
       const paymentData = paymentResponse.data;
@@ -128,6 +145,28 @@ export default function CheckoutPage() {
           
           {/* LEFT: Payment Methods (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
+            <Card className="shadow-none border-border">
+              <CardHeader className="pb-4 border-b border-border/50">
+                <CardTitle className="text-xl">Contact Information</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid w-full items-center gap-1.5">
+                  <Label htmlFor="email">Email Address for Receipt</Label>
+                  <Input 
+                    type="email" 
+                    id="email" 
+                    placeholder="name@example.com" 
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    We'll send the receipt and course details here.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="shadow-none border-border">
               <CardHeader className="pb-4 border-b border-border/50">
                 <CardTitle className="text-xl">Payment Method</CardTitle>

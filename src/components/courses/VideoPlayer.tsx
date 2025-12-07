@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import PlaybackRateControl from "./PlaybackRateControl";
 
-// --- ICONS (unchanged but organized) ---
+// --- ICONS ---
 const Icon = {
   Play: ({ className = "w-6 h-6" }) => (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,6 +43,13 @@ const Icon = {
       <path strokeLinecap="round" strokeLinejoin="round"
         d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 0h-4m4 0l-5-5" />
     </svg>
+  ),
+  // 🟢 NEW: Loading Spinner Icon
+  Spinner: ({ className = "w-10 h-10" }) => (
+    <svg className={`${className} animate-spin text-white`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
   )
 };
 
@@ -55,9 +62,13 @@ const ProgressBar = ({ progressRef, progress, onSeek }: any) => (
   <div
     ref={progressRef}
     onClick={onSeek}
-    className="w-full h-1 bg-gray-600/50 cursor-pointer rounded-full mb-2"
+    className="w-full h-1 bg-gray-600/50 cursor-pointer rounded-full mb-2 relative group/progress"
   >
-    <div className="h-full bg-[#2694C6] rounded-full" style={{ width: `${progress}%` }} />
+     {/* Added a hover effect to make bar bigger for easier clicking */}
+    <div className="absolute inset-0 group-hover/progress:h-2 group-hover/progress:-top-0.5 transition-all"></div>
+    <div className="h-full bg-[#2694C6] rounded-full relative" style={{ width: `${progress}%` }}>
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#2694C6] rounded-full scale-0 group-hover/progress:scale-100 transition-transform shadow-md" />
+    </div>
   </div>
 );
 
@@ -73,7 +84,7 @@ const VolumeControl = ({ volume, isMuted, onVolumeChange, onToggleMute }: any) =
       step="0.01"
       value={volume}
       onChange={onVolumeChange}
-      className="w-0 group-hover:w-24 h-1 ml-2 transition-all duration-300 opacity-0 group-hover:opacity-100"
+      className="w-0 group-hover:w-24 h-1 ml-2 transition-all duration-300 opacity-0 group-hover:opacity-100 accent-white"
     />
   </div>
 );
@@ -104,11 +115,13 @@ export default function VideoPlayer({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
+  
+  // 🟢 NEW: Loading state defaults to true
+  const [isLoading, setIsLoading] = useState(true);
 
   const lastUpdateTime = useRef(0);
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // --- Prevent key handling while user is typing ---
   const isTypingInInput = (el: HTMLElement | null): boolean => {
     if (!el) return false;
     const tag = el.tagName.toLowerCase();
@@ -120,7 +133,6 @@ export default function VideoPlayer({
     );
   };
 
-  // --- PLAY / PAUSE ---
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -137,7 +149,6 @@ export default function VideoPlayer({
     setProgress((now / dur) * 100);
     setCurrentTime(now);
 
-    // Throttle progress update → every 15 seconds
     if (lessonId && isPlaying && Math.abs(now - lastUpdateTime.current) > 15) {
       onProgressUpdate(lessonId, now);
       lastUpdateTime.current = now;
@@ -153,7 +164,6 @@ export default function VideoPlayer({
     onLessonComplete();
   };
 
-  // --- SEEK ---
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const bar = progressRef.current;
     const v = videoRef.current;
@@ -164,11 +174,9 @@ export default function VideoPlayer({
     v.currentTime = pos * v.duration;
   };
 
-  // --- VOLUME ---
   const changeVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
     const v = videoRef.current;
-
     setVolume(val);
     setIsMuted(val === 0);
     if (v) {
@@ -180,13 +188,11 @@ export default function VideoPlayer({
   const toggleMute = () => {
     const v = videoRef.current;
     if (!v) return;
-
     const newState = !v.muted;
     v.muted = newState;
     setIsMuted(newState);
   };
 
-  // --- PLAYBACK RATE ---
   const changeRate = (rate: number) => {
     const v = videoRef.current;
     if (!v) return;
@@ -194,7 +200,6 @@ export default function VideoPlayer({
     setPlaybackRate(rate);
   };
 
-  // --- FULLSCREEN ---
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       containerRef.current?.requestFullscreen();
@@ -203,18 +208,14 @@ export default function VideoPlayer({
     }
   };
 
-  // --- CONTROLS AUTO-HIDE ---
   const showControls = () => {
     setIsControlsVisible(true);
-
     if (hideControlsTimeout.current) clearTimeout(hideControlsTimeout.current);
-
     hideControlsTimeout.current = setTimeout(() => {
       if (isPlaying) setIsControlsVisible(false);
     }, 3000);
   };
 
-  // --- KEYBOARD SHORTCUTS (fixed) ---
   useEffect(() => {
     const handleKeys = (e: KeyboardEvent) => {
       if (isTypingInInput(e.target as HTMLElement)) return;
@@ -225,19 +226,15 @@ export default function VideoPlayer({
           e.preventDefault();
           togglePlay();
           break;
-
         case "m":
           toggleMute();
           break;
-
         case "f":
           toggleFullscreen();
           break;
-
         case "ArrowRight":
           if (videoRef.current) videoRef.current.currentTime += 5;
           break;
-
         case "ArrowLeft":
           if (videoRef.current) videoRef.current.currentTime -= 5;
           break;
@@ -248,22 +245,30 @@ export default function VideoPlayer({
     return () => window.removeEventListener("keydown", handleKeys);
   }, [togglePlay]);
 
-  // --- INITIAL LOAD / RESUME ---
   const handleMetadata = () => {
     const v = videoRef.current;
     if (!v) return;
     setDuration(v.duration);
-
     if (startTime && startTime < v.duration) {
       v.currentTime = startTime;
     }
   };
 
+  // 🟢 MODIFIED: Turn off loading when video can play
   const handleCanPlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    v.play();
+    setIsLoading(false); // Stop loading spinner
+    v.play().catch(() => {
+        // Handle autoplay blocking if necessary
+        setIsPlaying(false);
+    });
     setIsPlaying(true);
+  };
+
+  // 🟢 NEW: Handle buffering (Turn on loading when seeking/stalled)
+  const handleWaiting = () => {
+    setIsLoading(true);
   };
 
   if (!videoUrl) {
@@ -279,57 +284,70 @@ export default function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full bg-black rounded-md group"
+      // 🟢 CHANGED: added 'aspect-video' to force 16:9 ratio even when loading
+      className="relative w-full bg-black rounded-md group aspect-video overflow-hidden" 
       onMouseMove={showControls}
       onMouseLeave={() => isPlaying && setIsControlsVisible(false)}
     >
+      {/* 🟢 NEW: Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+          <Icon.Spinner />
+        </div>
+      )}
+
       <video
         key={videoUrl}
         ref={videoRef}
-        className="w-full h-full rounded-md"
+        className="w-full h-full object-contain rounded-md"
         src={videoUrl}
         onClick={togglePlay}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleMetadata}
         onEnded={handleVideoEnd}
+        // 🟢 NEW: Add waiting handler for buffering states
+        onWaiting={handleWaiting} 
         onCanPlay={handleCanPlay}
       />
 
       {/* CONTROLS */}
-      <div
-        className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${
-          isControlsVisible ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <ProgressBar progressRef={progressRef} progress={progress} onSeek={handleSeek} />
+      {/* 🟢 CHANGED: Hide controls completely if loading */}
+      {!isLoading && (
+        <div
+            className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${
+            isControlsVisible ? "opacity-100" : "opacity-0"
+            }`}
+        >
+            <ProgressBar progressRef={progressRef} progress={progress} onSeek={handleSeek} />
 
-        <div className="flex items-center justify-between text-white">
-          <div className="flex items-center space-x-4">
-            <button onClick={togglePlay}>
-              {isPlaying ? <Icon.Pause /> : <Icon.Play />}
-            </button>
+            <div className="flex items-center justify-between text-white">
+            <div className="flex items-center space-x-4">
+                <button onClick={togglePlay}>
+                {isPlaying ? <Icon.Pause /> : <Icon.Play />}
+                </button>
 
-            <VolumeControl
-              volume={volume}
-              isMuted={isMuted}
-              onVolumeChange={changeVolume}
-              onToggleMute={toggleMute}
-            />
+                <VolumeControl
+                volume={volume}
+                isMuted={isMuted}
+                onVolumeChange={changeVolume}
+                onToggleMute={toggleMute}
+                />
 
-            <span className="text-sm font-mono">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
-          </div>
+                <span className="text-sm font-mono">
+                {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+            </div>
 
-          <div className="flex items-center space-x-4">
-            <PlaybackRateControl playbackRate={playbackRate} onRateChange={changeRate} />
+            <div className="flex items-center space-x-4">
+                <PlaybackRateControl playbackRate={playbackRate} onRateChange={changeRate} />
 
-            <button onClick={toggleFullscreen}>
-              <Icon.Fullscreen />
-            </button>
-          </div>
+                <button onClick={toggleFullscreen}>
+                <Icon.Fullscreen />
+                </button>
+            </div>
+            </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
