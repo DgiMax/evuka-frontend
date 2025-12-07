@@ -196,7 +196,6 @@ export default function CourseDetailView() {
     }
   }, [slug, user, authLoading, activeSlug]); // ✅ ADDED: activeSlug dependency
 
-  // ... (Your loading, error, and return JSX is unchanged) ...
   if (loading || authLoading) {
     return <CourseDetailSkeleton />;
   }
@@ -221,7 +220,7 @@ export default function CourseDetailView() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="lg:grid lg:grid-cols-3 lg:gap-x-8 xl:gap-x-10">
           {/* Sidebar */}
-          <aside className="mt-2 lg:mt-0">
+          <aside className="mt-2 mb-4 lg:mb-0 lg:mt-0">
             <StickySidebar course={course} />
           </aside>
 

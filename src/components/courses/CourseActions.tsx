@@ -38,7 +38,7 @@ export function CourseActions({ course }: CourseActionsProps) {
   // Main Enroll / Continue button logic
   const handleMainAction = () => {
     if (course.is_enrolled) {
-      router.push(`/course-page/${course.slug}`);
+      router.push(`/course-learning/${course.slug}`);
     } else {
       handleAddToCart();
 
