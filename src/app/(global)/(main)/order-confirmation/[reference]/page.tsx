@@ -78,7 +78,7 @@ function OrderConfirmationContent() {
     }, [params, searchParams, clearCart, fetchCurrentUser]);
 
     const finalUrl = redirectContext?.type === 'organization' && redirectContext.org_slug 
-        ? `/org/${redirectContext.org_slug}/dashboard` 
+        ? `/${redirectContext.org_slug}/dashboard` 
         : '/dashboard';
 
     if (status === 'verifying') return <GeometricLoader />;

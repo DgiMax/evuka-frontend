@@ -84,9 +84,8 @@ const SectionHeader = ({ title, link, linkText }: { title: string; link?: string
   </div>
 );
 
-export default function DashboardView() {
+export default function DashboardView({ slug }: { slug: string | null }) {
   const { user, loading } = useAuth();
-  const { activeSlug } = useActiveOrg();
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [fetching, setFetching] = useState(true);
@@ -103,11 +102,18 @@ export default function DashboardView() {
 
   useEffect(() => {
     if (!user) return;
+
     const fetchDashboardData = async () => {
       setFetching(true);
+      setData(null);
+      
       try {
-        const url = activeSlug ? `/users/dashboard/?active_org=${activeSlug}` : "/users/dashboard/";
-        const res = await api.get(url);
+        const url = slug ? `/users/dashboard/?active_org=${slug}` : "/users/dashboard/";
+        const res = await api.get(url, {
+            headers: {
+                'X-Organization-Slug': slug || ''
+            }
+        });
         setData(res.data);
       } catch (err) {
         console.error(err);
@@ -115,8 +121,9 @@ export default function DashboardView() {
         setFetching(false);
       }
     };
+
     fetchDashboardData();
-  }, [user, activeSlug]);
+  }, [user, slug]);
 
   if (loading || (fetching && !data)) return <DashboardSkeleton />;
   if (!data) return null;
@@ -141,21 +148,6 @@ export default function DashboardView() {
               </p>
             </div>
             
-            {data.organizations.length > 0 && !activeSlug && (
-              <div className="flex -space-x-3 overflow-hidden">
-                {data.organizations.map((org) => (
-                  <Link key={org.slug} href={`/${org.slug}`} title={org.name}>
-                    <div className="inline-block h-10 w-10 rounded-full ring-2 ring-primary bg-white overflow-hidden relative border border-white/20">
-                      {org.logo ? (
-                        <Image src={org.logo} alt={org.name} fill className="object-cover" />
-                      ) : (
-                        <Building2 className="p-2 text-gray-400" />
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -223,7 +215,7 @@ export default function DashboardView() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <section className="bg-white rounded-md border border-border p-6 shadow-sm">
-              <SectionHeader title="My Learning" link={activeSlug ? `/${activeSlug}/courses` : "/courses"} linkText="Explore All" />
+              <SectionHeader title="My Learning" link={slug ? `/${slug}/courses` : "/courses"} linkText="Explore All" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {data.courses.map((course) => (
                   <EnrolledCourseCard key={course.slug} course={course} />
@@ -278,7 +270,7 @@ export default function DashboardView() {
               </div>
             </section>
 
-            {!activeSlug && data.organizations.length > 0 && (
+            {!slug && data.organizations.length > 0 && (
               <section className="bg-white rounded-md border border-border p-6 shadow-sm">
                 <SectionHeader title="Organizations" />
                 <div className="space-y-3">

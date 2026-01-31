@@ -7,17 +7,26 @@ import {
   useEffect,
   ReactNode,
   useMemo,
+  useCallback,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/lib/api/axios";
+import { RESERVED_SLUGS } from "@/lib/constants";
 
-/* Types -------------------------------------------------------------- */
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    _skipAuthRefresh?: boolean;
+    _retry?: boolean;
+  }
+}
 
 interface Organization {
   organization_name: string;
   organization_slug: string;
+  organization_status: string;
+  is_published: boolean;
   role?: string;
-  is_active: boolean;
+  is_active?: boolean;
 }
 
 interface User {
@@ -48,9 +57,8 @@ interface AuthContextType {
   fetchCurrentUser: (skip?: boolean) => Promise<User | null>;
 }
 
-/* Context ------------------------------------------------------------ */
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
@@ -62,86 +70,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isAuthenticated = useMemo(() => !!user, [user]);
   const isStudent = useMemo(() => !!user?.is_student, [user]);
 
-  /* ------------------------------------------------------------------
-     AXIOS TOKEN REFRESH INTERCEPTOR (FIXED)
-  ------------------------------------------------------------------ */
-
   useEffect(() => {
     const interceptor = api.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
-
-        // Do not refresh tokens during login/register/verification
         const skipFor = ["/login", "/register", "/verify-email"];
         if (skipFor.some((path) => originalRequest?.url?.includes(path))) {
           return Promise.reject(error);
         }
-
-        // prevent infinite loops
         if (originalRequest._retry) {
           return Promise.reject(error);
         }
-
         if (error.response?.status === 401) {
           originalRequest._retry = true;
           try {
-            await api.post("/users/refresh/", null, {
-              _skipAuthRefresh: true,
-            });
-
-            return api(originalRequest); // retry original
+            await api.post("/users/refresh/", null, { _skipAuthRefresh: true });
+            return api(originalRequest);
           } catch {
-            // refresh failed → clear user (session ended)
             setUser(null);
+            localStorage.removeItem("activeOrgSlug");
             return Promise.reject(error);
           }
         }
-
         return Promise.reject(error);
       }
     );
-
     return () => api.interceptors.response.eject(interceptor);
   }, []);
 
-  /* ------------------------------------------------------------------
-     FETCH CURRENT USER (FIXED)
-  ------------------------------------------------------------------ */
-
-  const fetchCurrentUser = async () => {
+  const fetchCurrentUser = useCallback(async () => {
     try {
       const res = await api.get<User>("/users/me/");
       setUser(res.data);
       return res.data;
     } catch {
-      // DO NOT force logout here.
-      // User may still be logging in or registering.
       return null;
     }
-  };
-
-  /* ------------------------------------------------------------------
-     INITIAL LOAD (FIXED)
-  ------------------------------------------------------------------ */
+  }, []);
 
   useEffect(() => {
     const init = async () => {
       await fetchCurrentUser();
       setLoading(false);
     };
-
     init();
-  }, []);
-
-  /* ------------------------------------------------------------------
-     AUTH REDIRECT LOGIC (FIXED, NO INFINITE LOOPS)
-  ------------------------------------------------------------------ */
+  }, [fetchCurrentUser]);
 
   useEffect(() => {
     if (loading) return;
-
-    // Unauthenticated users can access all public pages
     if (!user) return;
 
     const authPages = [
@@ -155,17 +132,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const isAuthPage = authPages.some((r) => pathname.startsWith(r));
 
     if (isAuthPage) {
-      router.replace("/dashboard");
+      const pathParts = pathname.split("/").filter(Boolean);
+      const firstSegment = pathParts[0];
+      const isContextual =
+        firstSegment && !RESERVED_SLUGS.includes(firstSegment);
+
+      router.replace(isContextual ? `/${firstSegment}/dashboard` : "/dashboard");
     }
   }, [user, loading, pathname, router]);
 
-  /* ------------------------------------------------------------------
-     AUTH FUNCTIONS
-  ------------------------------------------------------------------ */
-
   const login = async (username: string, password: string) => {
     await api.post("/users/login/", { username, password });
-    await fetchCurrentUser(); // get user data after successful login
+    await fetchCurrentUser();
+    localStorage.removeItem("activeOrgSlug");
     router.push("/dashboard");
   };
 
@@ -173,9 +152,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await api.post("/users/logout/");
     } catch (e) {
-      console.error("Logout failed:", e);
+      console.error(e);
     } finally {
       setUser(null);
+      localStorage.removeItem("activeOrgSlug");
       router.push("/");
     }
   };
@@ -229,8 +209,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
-/* Export Hook -------------------------------------------------------- */
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);

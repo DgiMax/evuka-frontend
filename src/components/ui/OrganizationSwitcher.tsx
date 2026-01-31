@@ -4,42 +4,20 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
-import { Building, Plus, Search } from "lucide-react";
+import { Search, Lock } from "lucide-react";
 
 const PERSONAL_ACCOUNT_VALUE = "__personal__";
-
 const STUDENT_DOMAIN = process.env.NEXT_PUBLIC_STUDENT_URL || "https://e-vuka.com";
 const TUTOR_DOMAIN = process.env.NEXT_PUBLIC_TUTOR_URL || "https://tutors.e-vuka.com";
 
-interface OrganizationSwitcherProps {
-  triggerClassName?: string;
-  fullWidth?: boolean;
-  height?: string;
-}
-
-export default function OrganizationSwitcher({
-  triggerClassName,
-  fullWidth = false,
-  height,
-}: OrganizationSwitcherProps) {
+export default function OrganizationSwitcher({ triggerClassName, fullWidth, height }: any) {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const { activeSlug } = useActiveOrg();
+  const { activeSlug, setActiveSlug } = useActiveOrg();
 
   if (loading || !user) return null;
-
   const organizations = user.organizations ?? [];
   const selectedValue = activeSlug ?? PERSONAL_ACCOUNT_VALUE;
 
@@ -47,99 +25,61 @@ export default function OrganizationSwitcher({
     if (value === selectedValue) return;
 
     if (value === PERSONAL_ACCOUNT_VALUE) {
-      router.push("/");
+      setActiveSlug(null);
+      router.push("/dashboard");
       return;
     }
 
     const targetOrg = organizations.find((org) => org.organization_slug === value);
+    if (!targetOrg || targetOrg.organization_status !== "approved") return;
 
-    if (!targetOrg) {
-      router.push(`/${value}/`);
-      return;
-    }
+    setActiveSlug(targetOrg.organization_slug);
+    const targetBaseUrl = targetOrg.role === "student" ? STUDENT_DOMAIN : TUTOR_DOMAIN;
+    const currentOrigin = window.location.origin.replace(/\/$/, "");
+    const normalizedBase = targetBaseUrl.replace(/\/$/, "");
 
-    const isStudentRole = targetOrg.role === "student";
-    const targetBaseUrl = isStudentRole ? STUDENT_DOMAIN : TUTOR_DOMAIN;
-    const currentOrigin = window.location.origin;
-    
-    const normalize = (url: string) => url.replace(/\/$/, "");
-
-    if (normalize(currentOrigin) === normalize(targetBaseUrl)) {
-      router.push(`/${value}/`);
+    if (currentOrigin === normalizedBase) {
+      router.push(`/${value}/dashboard`);
     } else {
-      window.location.href = `${targetBaseUrl}/${value}/`;
+      window.location.href = `${normalizedBase}/${value}/dashboard`;
     }
   };
 
   return (
-    <Select
-      key={activeSlug ?? "personal"}
-      value={selectedValue}
-      onValueChange={handleSelectChange}
-    >
-      <SelectTrigger
-        className={cn(
-          "justify-between truncate shadow-none",
-          fullWidth && "w-full px-4 text-base",
-          height ? height : "h-10",
-          triggerClassName
-        )}
-        aria-label="Select account or organization"
-      >
+    <Select key={activeSlug ?? "personal"} value={selectedValue} onValueChange={handleSelectChange}>
+      <SelectTrigger className={cn("justify-between truncate shadow-none", fullWidth && "w-full", height || "h-10", triggerClassName)}>
         <SelectValue placeholder="Select account..." />
       </SelectTrigger>
-      <SelectContent className="shadow-sm border-border">
+      <SelectContent>
         <SelectGroup>
-          <SelectItem value={PERSONAL_ACCOUNT_VALUE}>
-            {user.username} (Personal)
-          </SelectItem>
+          <SelectItem value={PERSONAL_ACCOUNT_VALUE}>{user.username} (Personal)</SelectItem>
         </SelectGroup>
-
         {organizations.length > 0 && (
           <>
             <SelectSeparator />
             <SelectGroup>
               <SelectLabel>Organizations</SelectLabel>
-              {organizations
-                .filter(
-                  (org) =>
-                    org.organization_slug && org.organization_slug.trim() !== ""
-                )
-                .map((org) => (
-                  <SelectItem
-                    key={org.organization_slug}
-                    value={org.organization_slug}
-                  >
+              {organizations.map((org) => {
+                const isLocked = org.organization_status !== "approved";
+                return (
+                  <SelectItem key={org.organization_slug} value={org.organization_slug} disabled={isLocked}>
                     <div className="flex items-center justify-between w-full gap-2">
-                        <span>
-                          {org.organization_name.length > 14
-                            ? org.organization_name.slice(0, 14) + "..."
-                            : org.organization_name}
-                        </span>
-                        <span className="text-xs text-muted-foreground uppercase border px-1 rounded">
-                            {org.role === 'student' ? 'STU' : 'TUT'}
-                        </span>
+                      <span className="flex items-center gap-2">
+                        {org.organization_name}
+                        {isLocked && <Lock className="h-3 w-3 opacity-50" />}
+                      </span>
+                      <span className="text-[10px] border px-1 rounded uppercase">{org.role === 'student' ? 'STU' : 'TUT'}</span>
                     </div>
                   </SelectItem>
-                ))}
+                );
+              })}
             </SelectGroup>
           </>
         )}
-
         <SelectSeparator />
-        <SelectGroup>
-          <SelectLabel>Actions</SelectLabel>
-          <Link
-            href="/organizations/browse/"
-            className={cn(
-              "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none transition-colors",
-              "focus:bg-accent focus:text-accent-foreground hover:bg-accent"
-            )}
-          >
-            <Search className="mr-2 h-4 w-4" />
-            <span>Browse Organizations</span>
-          </Link>
-        </SelectGroup>
+        <Link href="/organizations/browse/" className="flex items-center p-2 text-sm hover:bg-accent rounded-sm">
+          <Search className="mr-2 h-4 w-4" /> Browse Organizations
+        </Link>
       </SelectContent>
     </Select>
   );

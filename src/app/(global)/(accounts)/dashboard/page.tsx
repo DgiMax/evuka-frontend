@@ -1,6 +1,11 @@
 import DashboardView from "@/components/features/DashboardView";
+import OrgContextUpdater from "@/components/OrgContextUpdater";
 
 export default function PersonalDashboardPage() {
-  // Wrapped by (global)/layout.tsx -> sets activeSlug = null
-  return <DashboardView />;
+  return (
+    <>
+      <OrgContextUpdater slug={null} />
+      <DashboardView slug={null} />
+    </>
+  );
 }

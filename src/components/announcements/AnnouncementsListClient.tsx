@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useNotifications } from "@/context/NotificationSocketContext";
-import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
 import AnnouncementDetailModal from "@/components/announcements/AnnouncementDetailModal"; 
 import api from "@/lib/api/axios";
 import { Mail, MailOpen, Bell, Building2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-// 1. Import Skeleton
 import AnnouncementsSkeleton from "@/components/skeletons/AnnouncementsSkeleton";
 
 interface AnnouncementItem {
@@ -22,61 +20,60 @@ interface AnnouncementItem {
 
 interface Props {
     courseSlug?: string;
+    slug?: string | null;
 }
 
-export default function AnnouncementsListClient({ courseSlug }: Props) {
+export default function AnnouncementsListClient({ courseSlug, slug }: Props) {
     const { refreshNotifications } = useNotifications();
-    const { activeSlug, activeOrg } = useActiveOrg();
 
     const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<AnnouncementItem | null>(null);
     
-    const contextName = courseSlug ? 'Course Announcements' : (activeOrg?.name || 'Announcements');
-
-    // 1. Load Announcements
     const loadAnnouncements = useCallback(async () => {
         setIsLoading(true);
+        setAnnouncements([]);
         setError(null);
         
         try {
-            let response;
+            let url = "/announcements/";
             if (courseSlug) {
-                response = await api.get(`/announcements/course/${courseSlug}/`);
-            } else if (activeSlug) {
-                response = await api.get(`/announcements/`); 
-            } else {
-                response = await api.get(`/announcements/`);
+                url = `/announcements/course/${courseSlug}/`;
             }
+
+            const response = await api.get(url, {
+                headers: {
+                    'X-Organization-Slug': slug || ''
+                }
+            });
             setAnnouncements(response.data);
         } catch (err: any) {
-            console.error(err);
             setError("Failed to load announcements.");
         } finally {
             setIsLoading(false);
         }
-    }, [activeSlug, courseSlug]);
+    }, [slug, courseSlug]);
 
     useEffect(() => {
         loadAnnouncements();
     }, [loadAnnouncements]);
 
-    // 2. Mark As Read Handler
     const handleCardClick = async (announcement: AnnouncementItem) => {
         setSelectedAnnouncement(announcement);
 
         if (!announcement.is_read) {
             try {
-                // Optimistic Update
                 setAnnouncements(prev => prev.map(a => 
                     a.id === announcement.id ? { ...a, is_read: true } : a
                 ));
 
-                await api.post(`/announcements/${announcement.id}/mark-as-read/`);
+                await api.post(`/announcements/${announcement.id}/mark-as-read/`, {}, {
+                    headers: { 'X-Organization-Slug': slug || '' }
+                });
                 refreshNotifications();
             } catch (err) {
-                console.error("Failed to mark as read:", err);
+                console.error(err);
             }
         }
     };
@@ -90,7 +87,7 @@ export default function AnnouncementsListClient({ courseSlug }: Props) {
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-                        {contextName}
+                        Announcements
                     </h1>
                     <p className="text-gray-500 mt-1">
                         {courseSlug 
@@ -173,7 +170,6 @@ export default function AnnouncementsListClient({ courseSlug }: Props) {
                 </div>
             )}
             
-            {/* Using the Custom AnnouncementDetailModal */}
             {selectedAnnouncement && (
                 <AnnouncementDetailModal
                     announcement={selectedAnnouncement}

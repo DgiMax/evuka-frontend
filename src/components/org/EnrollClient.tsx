@@ -148,7 +148,7 @@ export default function EnrollClient({ orgSlug }: { orgSlug: string }) {
 
       if (validationData.status === 'active') {
         toast.success(validationData.detail || `Welcome to ${organization.name}!`);
-        router.push(`/org/${organization.slug}/dashboard`);
+        router.push(`/${organization.slug}/dashboard`);
 
       } else if (validationData.status === 'payment_required' && validationData.membership_id) {
         // 2. Initiate Payment

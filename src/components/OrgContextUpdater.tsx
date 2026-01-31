@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useActiveOrg } from '@/lib/hooks/useActiveOrg';
+import { useEffect } from "react";
+import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
+import { RESERVED_SLUGS } from "@/lib/constants";
 
 interface OrgContextUpdaterProps {
   slug: string | null;
@@ -11,13 +12,10 @@ export default function OrgContextUpdater({ slug }: OrgContextUpdaterProps) {
   const { activeSlug, setActiveSlug } = useActiveOrg();
 
   useEffect(() => {
-    // Only update if the slug actually changed
-    if (activeSlug !== slug) {
-      console.log('[OrgContextUpdater] Updating context from URL:', {
-        from: activeSlug,
-        to: slug,
-      });
-      setActiveSlug(slug);
+    const validatedSlug = RESERVED_SLUGS.includes(slug || "") ? null : slug;
+
+    if (activeSlug !== validatedSlug) {
+      setActiveSlug(validatedSlug);
     }
   }, [slug, activeSlug, setActiveSlug]);
 

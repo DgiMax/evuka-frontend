@@ -44,7 +44,7 @@ export function HeaderMenu() {
   // -------------------------------------------------
   // 🔹 Base path (reuse everywhere)
   // -------------------------------------------------
-  const basePath = activeSlug ? `/org/${activeSlug}` : `/dashboard`;
+  const basePath = activeSlug ? `/${activeSlug}` : `/dashboard`;
 
   // -------------------------------------------------
   // 🔹 Organization contextual links

@@ -1,21 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNotifications } from "@/context/NotificationSocketContext";
 import NotificationDetailModal from "@/components/notifications/NotificationDetailModal";
 import { CheckCircle, Mail, MailOpen, Loader2, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Matches NotificationSerializer structure
 interface NotificationItem {
-    id: number; // Notification ID
+    id: number;
     notification_type: 'announcement' | 'system';
     verb: string;
     is_read: boolean;
     created_at: string;
     organization: number | null;
     content_object: {
-        id: number; // Announcement ID
+        id: number;
         title: string;
         content: string;
         published_at: string;
@@ -24,38 +23,41 @@ interface NotificationItem {
     };
 }
 
-export default function GlobalNotificationFeedClient() {
-    // 1. Consume Context
+interface Props {
+    slug?: string | null;
+}
+
+export default function GlobalNotificationFeedClient({ slug }: Props) {
     const { 
         notifications, 
         unreadCount, 
         isLoading, 
         markAsRead, 
-        markAllAsRead 
+        markAllAsRead,
+        fetchNotifications
     } = useNotifications();
 
-    // 2. Local state for the Modal content
     const [selectedContent, setSelectedContent] = useState<any | null>(null);
 
-    // 3. Click Handler
+    useEffect(() => {
+        if (fetchNotifications) {
+            fetchNotifications(slug);
+        }
+    }, [slug, fetchNotifications]);
+
     const handleCardClick = (notification: NotificationItem) => {
-        // A. Mark as read in backend (via context)
         if (!notification.is_read) {
             markAsRead(notification.id);
         }
 
-        // B. Open Modal if it's an announcement
         if (notification.notification_type === 'announcement' && notification.content_object) {
             setSelectedContent(notification.content_object);
         }
     };
 
-    // 4. Mark All Handler
     const handleMarkAll = async () => {
         if (unreadCount === 0) return;
-        if (window.confirm("Mark all visible notifications as read?")) {
-            await markAllAsRead();
-        }
+        await markAllAsRead();
     };
 
     return (
@@ -83,7 +85,6 @@ export default function GlobalNotificationFeedClient() {
                 </button>
             </div>
 
-            {/* List Content */}
             {isLoading && notifications.length === 0 ? (
                 <div className="h-64 flex flex-col items-center justify-center text-gray-400">
                     <Loader2 className="w-8 h-8 animate-spin mb-3 text-blue-500" />
@@ -98,7 +99,6 @@ export default function GlobalNotificationFeedClient() {
             ) : (
                 <div className="space-y-3">
                     {notifications.map((notification) => {
-                        // Ensure content exists before rendering
                         if (!notification.content_object && notification.notification_type === 'announcement') return null;
 
                         const announcement = notification.content_object;
@@ -117,7 +117,6 @@ export default function GlobalNotificationFeedClient() {
                                         : "bg-white border-blue-100 shadow-md ring-1 ring-blue-50 hover:ring-blue-100 hover:shadow-lg translate-x-1"
                                 )}
                             >
-                                {/* Icon Status */}
                                 <div className="flex-shrink-0 pt-1 mr-4">
                                     {notification.is_read ? (
                                         <div className="p-2 bg-gray-100 rounded-full">
@@ -131,7 +130,6 @@ export default function GlobalNotificationFeedClient() {
                                     )}
                                 </div>
 
-                                {/* Text Content */}
                                 <div className="flex-grow min-w-0">
                                     <div className="flex justify-between items-start gap-4">
                                         <h3 className={cn(
@@ -152,7 +150,6 @@ export default function GlobalNotificationFeedClient() {
                                         {displayContent}
                                     </p>
 
-                                    {/* Footer Badges */}
                                     {!isSystem && (
                                         <div className="flex items-center mt-3 text-xs space-x-3">
                                             {announcement.organization_name && (
@@ -172,7 +169,6 @@ export default function GlobalNotificationFeedClient() {
                 </div>
             )}
 
-            {/* Modal - Renamed to NotificationDetailModal */}
             {selectedContent && (
                 <NotificationDetailModal
                     content={selectedContent}

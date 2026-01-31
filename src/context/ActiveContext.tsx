@@ -16,8 +16,12 @@ interface OrganizationData {
 interface IActiveOrgContext {
     activeSlug: string | null;
     setActiveSlug: Dispatch<SetStateAction<string | null>>;
+    activeRole: string | null;
+    setActiveRole: Dispatch<SetStateAction<string | null>>;
     activeOrg: OrganizationData | null;
     loadingOrg: boolean;
+    isVerifying: boolean;
+    setIsVerifying: Dispatch<SetStateAction<boolean>>;
 }
 
 export const ActiveContext = createContext<IActiveOrgContext | undefined>(undefined);
@@ -26,17 +30,17 @@ export const ActiveOrgProvider = ({ children }: { children: ReactNode }) => {
     const { isAuthenticated } = useAuth();
     
     const [activeSlug, setActiveSlug] = useState<string | null>(null);
+    const [activeRole, setActiveRole] = useState<string | null>(null);
     const [activeOrg, setActiveOrg] = useState<OrganizationData | null>(null);
     const [loadingOrg, setLoadingOrg] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
     const [isHydrated, setIsHydrated] = useState(false);
 
     const activeSlugRef = useRef<string | null>(null);
 
     useEffect(() => {
         if (!isHydrated) return;
-        
         activeSlugRef.current = activeSlug;
-        console.log('[ActiveContext] Slug changed to:', activeSlug);
 
         if (activeSlug) {
             localStorage.setItem('activeOrgSlug', activeSlug);
@@ -48,7 +52,6 @@ export const ActiveOrgProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const stored = localStorage.getItem('activeOrgSlug');
         if (stored && stored !== 'null' && stored !== 'undefined') {
-            console.log('[ActiveContext] Restoring slug:', stored);
             setActiveSlug(stored);
             activeSlugRef.current = stored;
         }
@@ -58,7 +61,6 @@ export const ActiveOrgProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const interceptorId = api.interceptors.request.use((config) => {
             const currentSlug = activeSlugRef.current;
-            
             if (currentSlug) {
                 config.headers['X-Organization-Slug'] = currentSlug;
             } else {
@@ -67,11 +69,7 @@ export const ActiveOrgProvider = ({ children }: { children: ReactNode }) => {
             return config;
         });
 
-        console.log('[ActiveContext] Interceptor registered');
-
-        return () => {
-            api.interceptors.request.eject(interceptorId);
-        };
+        return () => api.interceptors.request.eject(interceptorId);
     }, []);
 
     const fetchOrgData = useCallback(async (slug: string | null) => {
@@ -86,7 +84,6 @@ export const ActiveOrgProvider = ({ children }: { children: ReactNode }) => {
             const res = await api.get(`/organizations/${slug}/details/`);
             setActiveOrg(res.data);
         } catch (error) {
-            console.error("Failed to fetch org details", error);
             setActiveOrg(null);
         } finally {
             setLoadingOrg(false);
@@ -104,8 +101,12 @@ export const ActiveOrgProvider = ({ children }: { children: ReactNode }) => {
             value={{
                 activeSlug,
                 setActiveSlug,
+                activeRole,
+                setActiveRole,
                 activeOrg,
                 loadingOrg,
+                isVerifying,
+                setIsVerifying,
             }}
         >
             {children}
