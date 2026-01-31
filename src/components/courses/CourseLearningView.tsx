@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import CourseSidebar from "@/components/courses/CourseSidebar";
@@ -16,12 +16,12 @@ import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
 import LiveDetailComponent from "@/components/courses/LiveDetailComponent";
 import AssignmentSubmissionFormComponent from "@/components/courses/AssignmentSubmissionFormComponent";
 import QuizAttemptFormComponent from "@/components/courses/QuizAttemptFormComponent";
-import { Loader2, Maximize2, Minimize2, X } from "lucide-react";
 import CourseLearningSkeleton from "@/components/skeletons/CourseLearningSkeleton";
 import LearningAssistant from '@/components/ai/LearningAssistant'; 
+import EvukaLivePlayer from "@/components/courses/EvukaLivePlayer"; // 🟢 Imported New Player
 
 
-// --- INTERFACES (Unchanged) ---
+// --- INTERFACES ---
 interface Quiz {
   id: number;
   title: string;
@@ -43,14 +43,18 @@ interface CourseAssignment {
   latest_submission: any;
 }
 
+// 🟢 UPDATED: Matches new Django/Bunny Model
 export interface LiveLesson {
   id: number;
   title: string;
-  jitsi_meeting_link: string;
   date: string;
   start_time: string;
   end_time: string;
-  jitsi_token: string | null;
+  
+  // New Fields
+  hls_playback_url: string | null;
+  chat_room_id: string | null;
+  is_active: boolean;
 }
 
 interface LiveClass {
@@ -94,7 +98,7 @@ export type ActiveContent = {
 
 export default function CourseLearningView() {
   const params = useParams();
-  const searchParams = useSearchParams(); // 🟢 To read URL params
+  const searchParams = useSearchParams();
   const slug = params.slug as string;
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -106,14 +110,11 @@ export default function CourseLearningView() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isJitsiMode, setIsJitsiMode] = useState(false);
+  
+  // 🟢 State for New Player
+  const [isLiveMode, setIsLiveMode] = useState(false); 
   const [isJoiningLive, setIsJoiningLive] = useState(false);
 
-  // 🟢 Fullscreen Logic Refs
-  const jitsiContainerRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // 🟢 fetchCourseData wrapped in useCallback (Required for dependency)
   const fetchCourseData = useCallback(async () => {
     if (!user || !slug) return;
 
@@ -148,7 +149,6 @@ export default function CourseLearningView() {
       });
 
       if (allContent.length > 0) {
-        // 🟢 RESTORE LOGIC: Check URL params first
         const urlType = searchParams.get('type');
         const urlId = searchParams.get('id');
         
@@ -160,14 +160,12 @@ export default function CourseLearningView() {
 
         if (targetContent) {
              setActiveContent(targetContent);
-             // Restore tab based on type
              if (['lesson', 'quiz', 'assignment'].includes(targetContent.type)) {
                  setActiveTab("Content");
              } else {
                  setActiveTab("Overview");
              }
         } else {
-            // Default Fallback: First uncompleted item
             const firstUncompletedItem =
               allContent.find(
                 (item) =>
@@ -188,14 +186,13 @@ export default function CourseLearningView() {
     } finally {
       setFetching(false);
     }
-  }, [slug, user, activeSlug]); // Removed searchParams from dependency to prevent loop, we read it once on load
+  }, [slug, user, activeSlug]); 
 
   useEffect(() => {
     fetchCourseData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, user, activeSlug]); // Run only when core identifiers change
+  }, [slug, user, activeSlug]);
 
-  // 🟢 handleSubmissionSuccess (for quiz/assignment refresh)
   const handleSubmissionSuccess = useCallback(() => {
     fetchCourseData();
     setActiveTab("Content");
@@ -277,18 +274,16 @@ export default function CourseLearningView() {
 
     if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
       const nextLesson = allLessons[currentIndex + 1];
-      // 🟢 Use the updated switcher to ensure URL updates
       handleContentSwitch({ type: "lesson", data: nextLesson });
       setActiveTab("Overview");
     }
   };
 
   const handleContentSwitch = (content: ActiveContent) => {
-    setIsJitsiMode(false);
+    setIsLiveMode(false);
     setIsJoiningLive(false);
     setActiveContent(content);
 
-    // 🟢 UPDATE URL: Persist state to URL so reload works
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.set('type', content.type);
     newParams.set('id', content.data.id);
@@ -307,36 +302,20 @@ export default function CourseLearningView() {
     setIsSidebarOpen(false);
   };
 
+  // 🟢 UPDATED: Join Logic for HLS Stream
   const joinLiveSession = useCallback(() => {
     if (activeContent?.type !== "live") return;
 
     const liveLesson = activeContent.data as LiveLesson;
 
-    let joinUrl = liveLesson.jitsi_meeting_link;
-    if (liveLesson.jitsi_token) {
-      joinUrl = `${joinUrl}?jwt=${liveLesson.jitsi_token}`;
-    }
-
-    if (joinUrl) {
-      setIsJitsiMode(true);
-      setIsJoiningLive(false);
+    if (liveLesson.hls_playback_url) {
+        setIsLiveMode(true);
+        setIsJoiningLive(false);
     } else {
-      alert("Meeting link not available.");
-      setIsJoiningLive(false);
+        alert("The tutor has not started the stream yet.");
+        setIsJoiningLive(false);
     }
   }, [activeContent]);
-
-  // 🟢 Fullscreen Toggle Function
-  const toggleFullscreen = () => {
-    if (!jitsiContainerRef.current) return;
-    if (!document.fullscreenElement) {
-        jitsiContainerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-    } else {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-    }
-  };
 
   if (loading || fetching) {
     return <CourseLearningSkeleton />;
@@ -368,27 +347,22 @@ export default function CourseLearningView() {
   const activeQuizData =
     (activeContent?.type === "quiz" ? activeContent.data : null) as Quiz | null;
 
-  // 🟢 DERIVE CONTEXT FOR THE ASSISTANT
   const currentLessonId = activeLessonData?.id; 
 
   const isVideoPlayerVisible = !!activeLessonData;
-  const isLiveDetailVisible = !!activeLiveData && !isJitsiMode;
-  const isJitsiFrameVisible = !!activeLiveData && isJitsiMode;
+  const isLiveDetailVisible = !!activeLiveData && !isLiveMode;
+  const isLivePlayerVisible = !!activeLiveData && isLiveMode; // 🟢 New Visibility Check
   const isAssignmentFormVisible = !!activeAssignmentData;
   const isQuizAttemptFormVisible = !!activeQuizData;
 
   const isMainSlotOccupied =
     isVideoPlayerVisible ||
     isLiveDetailVisible ||
-    isJitsiFrameVisible ||
+    isLivePlayerVisible ||
     isAssignmentFormVisible ||
     isQuizAttemptFormVisible;
 
   const isPlaceholderVisible = !isMainSlotOccupied;
-
-  const jitsiUrl = activeLiveData?.jitsi_meeting_link
-    ? `${activeLiveData.jitsi_meeting_link}?jwt=${activeLiveData.jitsi_token}`
-    : "";
 
   return (
     <div className="flex flex-1 relative w-full m-0 p-0 min-h-0">
@@ -409,53 +383,12 @@ export default function CourseLearningView() {
             />
           )}
 
-          {/* 🟢 Jitsi Container with Fullscreen & Exit Controls */}
-          {isJitsiFrameVisible && (
-            <div 
-                ref={jitsiContainerRef}
-                className="relative w-full aspect-video rounded-md overflow-hidden bg-black flex items-center justify-center group shadow-2xl"
-            >
-              {isJoiningLive ? (
-                <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="h-8 w-8 animate-spin text-white" />
-                    <p className="text-white font-medium">Connecting to classroom...</p>
-                </div>
-              ) : (
-                <>
-                  <iframe
-                    src={jitsiUrl}
-                    allow="camera; microphone; display-capture; fullscreen"
-                    className="w-full h-full border-0"
-                  />
-                  
-                  {/* Overlay Controls (Visible on Hover or active) */}
-                  <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-b from-black/50 to-transparent">
-                      
-                      {/* Maximize/Minimize Button */}
-                      <button
-                        onClick={toggleFullscreen}
-                        className="bg-black/40 hover:bg-black/60 text-white p-2 rounded backdrop-blur-sm transition-colors"
-                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-                      >
-                        {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                      </button>
-
-                      {/* Exit Meeting Button */}
-                      <button
-                        onClick={() => {
-                            if (document.fullscreenElement) document.exitFullscreen();
-                            setIsJitsiMode(false);
-                            setIsFullscreen(false);
-                        }}
-                        className="flex items-center gap-2 bg-destructive/90 hover:bg-destructive text-white px-4 py-2 rounded text-sm font-semibold shadow-sm backdrop-blur-sm transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                        Exit Class
-                      </button>
-                  </div>
-                </>
-              )}
-            </div>
+          {/* 🟢 NEW: EvukaLivePlayer Component */}
+          {isLivePlayerVisible && activeLiveData?.hls_playback_url && (
+             <EvukaLivePlayer 
+                playbackUrl={activeLiveData.hls_playback_url}
+                onExit={() => setIsLiveMode(false)}
+             />
           )}
 
           {isLiveDetailVisible && (
@@ -506,7 +439,7 @@ export default function CourseLearningView() {
             onToggleComplete={handleToggleComplete}
             joinLiveSession={joinLiveSession}
             setJoiningLive={setIsJoiningLive}
-            setActiveContent={handleContentSwitch} // 🟢 Pass the enhanced switcher
+            setActiveContent={handleContentSwitch}
           />
         </main>
 
@@ -528,7 +461,6 @@ export default function CourseLearningView() {
           className="fixed inset-0 bg-black/60 z-30 lg:hidden"
         />
       )}
-      {/* 🟢 NEW: Learning Assistant Component */}
       <LearningAssistant 
           courseSlug={course.slug}
           courseTitle={course.title}

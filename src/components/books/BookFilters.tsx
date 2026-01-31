@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { SlidersHorizontal, ChevronUp, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FiltersState {
   categories: Record<string, boolean>;
   levels: Record<string, boolean>;
+  formats: Record<string, boolean>;
   price: { min: number; max: number };
 }
 
@@ -23,30 +24,33 @@ const FilterSection = ({ title, children, defaultOpen = true }: any) => {
   );
 };
 
-const CourseFilters = ({ data, onFilterChange }: any) => {
+export default function BookFilters({ data, onFilterChange }: any) {
   const DEFAULT_MAX_PRICE = data?.price?.max ?? 10000;
+  const isInitialMount = useRef(true);
 
   const [filters, setFilters] = useState<FiltersState>({
     categories: {},
     levels: {},
+    formats: {},
     price: { min: 0, max: DEFAULT_MAX_PRICE },
   });
 
-  const updateFilters = (newFilters: FiltersState) => {
-    setFilters(newFilters);
+  const updateFilters = (next: FiltersState) => {
+    setFilters(next);
     const params: any = {};
-    const selectedCats = Object.keys(newFilters.categories).filter(k => newFilters.categories[k]);
+    const selectedCats = Object.keys(next.categories).filter(k => next.categories[k]);
     if (selectedCats.length > 0) params.category = selectedCats;
-    const selectedLvls = Object.keys(newFilters.levels).filter(k => newFilters.levels[k]);
-    if (selectedLvls.length > 0) params.level = selectedLvls;
-    if (newFilters.price.min > 0) params.min_price = String(newFilters.price.min);
-    if (newFilters.price.max < DEFAULT_MAX_PRICE) params.max_price = String(newFilters.price.max);
-    onFilterChange?.(params);
-  };
+    
+    const selectedLvls = Object.keys(next.levels).filter(k => next.levels[k]);
+    if (selectedLvls.length > 0) params.reading_level = selectedLvls;
 
-  const handleToggle = (section: 'categories' | 'levels', id: string, checked: boolean) => {
-    const next = { ...filters, [section]: { ...filters[section], [id]: checked } };
-    updateFilters(next);
+    const selectedFmts = Object.keys(next.formats).filter(k => next.formats[k]);
+    if (selectedFmts.length > 0) params.book_format = selectedFmts;
+
+    if (next.price.min > 0) params.min_price = String(next.price.min);
+    if (next.price.max < DEFAULT_MAX_PRICE) params.max_price = String(next.price.max);
+
+    onFilterChange?.(params);
   };
 
   const handlePriceChange = (type: 'min' | 'max', val: number) => {
@@ -54,57 +58,37 @@ const CourseFilters = ({ data, onFilterChange }: any) => {
     updateFilters(next);
   };
 
-  const clearAll = () => {
-    updateFilters({ categories: {}, levels: {}, price: { min: 0, max: DEFAULT_MAX_PRICE } });
+  const handleToggle = (section: keyof Omit<FiltersState, 'price'>, id: string, checked: boolean) => {
+    updateFilters({ ...filters, [section]: { ...filters[section], [id]: checked } });
   };
 
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-6 px-1">
-        <h2 className="text-sm font-black uppercase tracking-tighter text-gray-900 flex items-center gap-2">
-          <SlidersHorizontal size={16} /> Filters
-        </h2>
-        <button onClick={clearAll} className="text-[10px] font-bold text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors">
-          <RotateCcw size={12} /> RESET
-        </button>
+        <h2 className="text-sm font-black uppercase tracking-tighter text-gray-900 flex items-center gap-2"><SlidersHorizontal size={16} /> Filters</h2>
+        <button onClick={() => updateFilters({ categories: {}, levels: {}, formats: {}, price: { min: 0, max: DEFAULT_MAX_PRICE } })} className="text-[10px] font-bold text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors"><RotateCcw size={12} /> RESET</button>
       </div>
 
       <div className="flex flex-col">
-        {data?.categories && data.categories.length > 0 && (
+        {data?.globalCategories?.length > 0 && (
           <FilterSection title="Categories">
-            {data.categories.map((cat: any) => (
+            {data.globalCategories.map((cat: any) => (
               <label key={cat.id} className="flex items-center py-2 cursor-pointer group">
-                <input 
-                    type="checkbox" 
-                    checked={!!filters.categories[cat.id]} 
-                    onChange={(e) => handleToggle("categories", cat.id, e.target.checked)}
-                    className="h-4 w-4 border-2 border-gray-300 rounded-md checked:bg-[#2694C6] checked:border-[#2694C6] transition-all accent-[#2694C6]" 
-                />
-                <span className={cn("ml-3 text-[13px] transition-colors", filters.categories[cat.id] ? "text-[#2694C6] font-bold" : "text-gray-600 group-hover:text-gray-900")}>
-                    {cat.label}
-                </span>
+                <input type="checkbox" checked={!!filters.categories[cat.slug]} onChange={(e) => handleToggle("categories", cat.slug, e.target.checked)} className="h-4 w-4 border-2 border-gray-300 rounded-md checked:bg-primary checked:border-primary accent-[#2694C6]" />
+                <span className={cn("ml-3 text-[13px] transition-colors", filters.categories[cat.slug] ? "text-primary font-bold" : "text-gray-600 group-hover:text-gray-900")}>{cat.name}</span>
               </label>
             ))}
           </FilterSection>
         )}
 
-        {data?.levels && data.levels.length > 0 && (
-          <FilterSection title="Learning Level">
-            {data.levels.map((lvl: any) => (
-              <label key={lvl.id} className="flex items-center py-2 cursor-pointer group">
-                <input 
-                    type="checkbox" 
-                    checked={!!filters.levels[lvl.id]} 
-                    onChange={(e) => handleToggle("levels", lvl.id, e.target.checked)}
-                    className="h-4 w-4 border-2 border-gray-300 rounded-md checked:bg-[#2694C6] checked:border-[#2694C6] transition-all accent-[#2694C6]" 
-                />
-                <span className={cn("ml-3 text-[13px] transition-colors", filters.levels[lvl.id] ? "text-[#2694C6] font-bold" : "text-gray-600 group-hover:text-gray-900")}>
-                    {lvl.label}
-                </span>
-              </label>
-            ))}
-          </FilterSection>
-        )}
+        <FilterSection title="Format">
+          {['pdf', 'epub', 'audio'].map((fmt) => (
+            <label key={fmt} className="flex items-center py-2 cursor-pointer group">
+              <input type="checkbox" checked={!!filters.formats[fmt]} onChange={(e) => handleToggle("formats", fmt, e.target.checked)} className="h-4 w-4 border-2 border-gray-300 rounded-md checked:bg-primary checked:border-primary accent-[#2694C6]" />
+              <span className={cn("ml-3 text-[13px] transition-colors uppercase", filters.formats[fmt] ? "text-primary font-bold" : "text-gray-600 group-hover:text-gray-900")}>{fmt}</span>
+            </label>
+          ))}
+        </FilterSection>
 
         <FilterSection title="Price Range">
           <div className="pt-4 space-y-6">
@@ -151,6 +135,4 @@ const CourseFilters = ({ data, onFilterChange }: any) => {
       </div>
     </div>
   );
-};
-
-export default CourseFilters;
+}

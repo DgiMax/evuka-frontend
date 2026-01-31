@@ -22,9 +22,11 @@ export const wishlistService = {
     return data.map(normalizeWishlistItem);
   },
 
-  async addToWishlist(slug: string, type: "course" | "event") {
-    const body =
-      type === "course" ? { course_slug: slug } : { event_slug: slug };
+  async addToWishlist(slug: string, type: "course" | "event" | "book") {
+    let body = {};
+    if (type === "course") body = { course_slug: slug };
+    else if (type === "event") body = { event_slug: slug };
+    else if (type === "book") body = { book_slug: slug };
 
     const res = await fetch(`${API_URL}/marketplace/wishlist/`, {
       method: "POST",

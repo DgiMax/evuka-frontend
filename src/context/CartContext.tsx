@@ -2,16 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// --- TYPE DEFINITIONS ---
 export type CartItem = {
-  // --- 1. Add the 'type' field ---
-  type: 'course' | 'event'; 
+  type: 'course' | 'event' | 'book'; 
   slug: string;
   title: string;
-  // This field can hold the instructor's or organizer's name
   instructor_name: string; 
-  price: string; // e.g., "KES 2050"
-  priceValue: number; // numeric value for calculations
+  price: string; 
+  priceValue: number; 
   thumbnail?: string;
 };
 
@@ -21,18 +18,15 @@ type CartContextType = {
   removeFromCart: (slug: string) => void;
   clearCart: () => void;
   itemCount: number;
-  cartTotal: number; // 2. Add a cart total for convenience
+  cartTotal: number;
 };
 
-// --- CREATE CONTEXT ---
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// --- PROVIDER COMPONENT ---
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Load from localStorage (no changes needed)
   useEffect(() => {
     try {
       const localData = localStorage.getItem('cartItems');
@@ -49,7 +43,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setHydrated(true);
   }, []);
 
-  // Save to localStorage (no changes needed)
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -59,7 +52,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [cartItems, hydrated]);
 
-  // Add to cart (no changes needed)
   const addToCart = (itemToAdd: CartItem) => {
     setCartItems(prevItems => {
       if (prevItems.some(item => item.slug === itemToAdd.slug)) {
@@ -69,19 +61,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  // Remove item (no changes needed)
   const removeFromCart = (slugToRemove: string) => {
     setCartItems(prevItems => prevItems.filter(item => item.slug !== slugToRemove));
   };
 
-  // Clear all (no changes needed)
   const clearCart = () => {
     setCartItems([]);
   };
 
   const itemCount = cartItems.length;
-
-  // Calculate total price of items in the cart
   const cartTotal = cartItems.reduce((total, item) => total + item.priceValue, 0);
 
   if (!hydrated) return null;
@@ -94,7 +82,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         removeFromCart,
         clearCart,
         itemCount,
-        cartTotal, // Expose the total
+        cartTotal,
       }}
     >
       {children}
@@ -102,7 +90,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// --- CUSTOM HOOK ---
 export const useCart = () => {
   const context = useContext(CartContext);
   if (context === undefined) {

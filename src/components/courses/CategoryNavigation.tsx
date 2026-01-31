@@ -1,10 +1,7 @@
-// src/components/courses/CategoryNavigation.tsx
-
 import React from "react";
-import { Inbox } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { CategoryCards, ActiveCategoryHeader } from "@/components/courses/CategoryCards";
 
-// Define the shape of the View State passed from the parent
 export type ViewState = 
   | { mode: 'ROOT'; activeParent: null; activeSub: null }
   | { mode: 'PARENT'; activeParent: any; activeSub: null }
@@ -27,10 +24,8 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
   onChildSelect,
   onBack
 }) => {
-  // 1. Loading State
   if (isLoading || !filterData) return null;
 
-  // 2. Helper to get subcategories for the current parent
   const getSubCategories = () => {
     if (viewState.activeParent) {
       return filterData.globalSubCategories.filter(
@@ -40,12 +35,9 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
     return [];
   };
 
-  // --- RENDER LOGIC ---
-
-  // MODE A: Root View (Show Main Categories)
   if (viewState.mode === 'ROOT') {
     return (
-      <div className="animate-in fade-in duration-500">
+      <div className="animate-in fade-in duration-500 mb-6 md:mb-10">
         <CategoryCards 
           categories={filterData.globalCategories} 
           onSelect={onParentSelect} 
@@ -54,18 +46,17 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
     );
   }
 
-  // MODE B: Parent View (Show Header + Subcategory Cards)
   if (viewState.mode === 'PARENT' && viewState.activeParent) {
     const subCategories = getSubCategories();
     return (
-      <div className="mb-8 animate-in fade-in slide-in-from-left-4 duration-300">
+      <div className="mb-6 md:mb-10 animate-in fade-in slide-in-from-left-4 duration-300">
         <ActiveCategoryHeader 
           category={viewState.activeParent} 
           onBack={onBack} 
         />
         {subCategories.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">
+          <div className="mt-6 md:mt-8">
+            <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 px-1">
               Explore {viewState.activeParent.name}
             </h3>
             <CategoryCards 
@@ -78,34 +69,29 @@ export const CategoryNavigation: React.FC<CategoryNavigationProps> = ({
     );
   }
 
-  // MODE C: Child View (Deep Focus - Header Only)
   if (viewState.mode === 'CHILD' && viewState.activeParent && viewState.activeSub) {
     return (
-      <div className="mb-8 animate-in fade-in slide-in-from-left-4 duration-300">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-6">
-          
+      <div className="mb-6 md:mb-10 animate-in fade-in slide-in-from-left-4 duration-300">
+        <div className="flex flex-row items-center gap-3 sm:gap-6 px-1 overflow-hidden">
           <button 
             onClick={onBack}
-            className="group flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors w-full sm:w-auto"
+            className="group flex items-center gap-1 text-[10px] sm:text-xs font-bold text-gray-500 hover:text-primary transition-all flex-shrink-0"
           >
-            <div className="p-1 bg-gray-100 rounded-full group-hover:bg-gray-200 transition-colors">
-                 <Inbox className="w-4 h-4 rotate-180" /> 
-            </div>
-            
-            <span className="truncate max-w-[200px] sm:max-w-[150px] block" title={`Back to ${viewState.activeParent.name}`}>
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-x-1" /> 
+            <span className="uppercase tracking-wider whitespace-nowrap">
                 Back to {viewState.activeParent.name}
             </span>
           </button>
 
-          <div className="hidden sm:block h-6 w-px bg-gray-300"></div>
+          <div className="h-6 sm:h-8 w-px bg-gray-200 flex-shrink-0"></div>
 
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight break-words">
+          <h2 className="text-lg sm:text-2xl font-black text-gray-900 leading-tight tracking-tight truncate">
             {viewState.activeSub.name}
           </h2>
         </div>
       </div>
     );
-}
+  }
 
   return null;
 };

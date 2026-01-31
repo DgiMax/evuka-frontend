@@ -9,7 +9,7 @@ interface WishlistItem {
   slug: string;
   title: string;
   price?: string;
-  type: "course" | "event";
+  type: "course" | "event" | "book";
   imageUrl?: string;
   instructor?: string | null;
 }
@@ -17,7 +17,7 @@ interface WishlistItem {
 interface WishlistContextType {
   wishlist: WishlistItem[];
   loading: boolean;
-  addToWishlist: (slug: string, type: "course" | "event") => Promise<void>;
+  addToWishlist: (slug: string, type: "course" | "event" | "book") => Promise<void>;
   removeFromWishlist: (slug: string) => Promise<void>;
   isInWishlist: (slug: string) => boolean;
 }
@@ -54,7 +54,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     loadWishlist();
   }, [user, authLoading]);
 
-  const addToWishlist = async (slug: string, type: "course" | "event") => {
+  const addToWishlist = async (slug: string, type: "course" | "event" | "book") => {
     try {
       const newItem = (await wishlistService.addToWishlist(slug, type)) as WishlistItem;
       setWishlist((prev) => {

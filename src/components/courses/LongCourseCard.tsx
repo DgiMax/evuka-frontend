@@ -2,184 +2,139 @@
 
 import React from "react";
 import Link from "next/link";
+import { Star, Users, BarChart } from "lucide-react";
 import { useCart, CartItem } from "@/context/CartContext";
 import { toast } from "sonner";
-import { WishlistButton } from "../ui/WishlistButton"; // Ensure this path is correct
-import { useActiveOrg } from "@/lib/hooks/useActiveOrg"; // ✅ Import the hook
+import { WishlistButton } from "../ui/WishlistButton";
+import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
+import { cn } from "@/lib/utils";
 
-type StarRatingProps = {
-  rating: number;
-  reviewCount: number;
-};
-
-type CourseCardProps = {
-  slug: string;
-  title: string;
-  description: string;
-  instructor: string; // Assuming this is instructor_name from serializer
-  rating: number;
-  reviewCount: number;
-  price: string; // Already formatted as 'KES XXX'
-  thumbnail?: string;
-  is_enrolled: boolean;
-};
-
-// --- STAR ICON (Unchanged) ---
-const StarIcon = ({
-  filled = true,
-  className = "w-5 h-5",
-}: {
-  filled?: boolean;
-  className?: string;
-}) => (
-  <svg
-    className={`${className} ${filled ? "text-yellow-400" : "text-gray-300"}`}
-    fill="currentColor"
-    viewBox="0 0 20 20"
-  >
-    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.368-2.448a1 1 0 00-1.176 0l-3.368 2.448c-.784.57-1.838-.197-1.54-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z" />
-  </svg>
-);
-
-// --- STAR RATING (Unchanged) ---
-const StarRating = ({ rating, reviewCount }: StarRatingProps) => (
-  <div className="flex items-center space-x-1">
-    {/* Display stars only if rating is positive */}
-    {rating > 0 && [...Array(5)].map((_, i) => (
-       <StarIcon key={i} filled={i < Math.round(rating)} /> // Use Math.round for better representation
-    ))}
-    {/* Display review count only if positive */}
-    {reviewCount > 0 && (
-      <span className="text-gray-600 text-sm ml-1">
-        ({reviewCount.toLocaleString()})
-      </span>
-    )}
-     {/* Fallback if no rating/reviews */}
-     {rating <= 0 && reviewCount <= 0 && (
-        <span className="text-gray-500 text-xs italic">No reviews yet</span>
-     )}
-  </div>
-);
-
-// --- MAIN CARD COMPONENT ---
-const LongCourseCard = ({
-  slug,
-  title,
-  description,
-  instructor,
-  rating,
-  reviewCount,
-  price, // Expecting formatted price like 'KES 1000' or 'Free'
-  thumbnail,
-  is_enrolled,
-}: CourseCardProps) => {
-  const { activeSlug } = useActiveOrg(); // ✅ Get the active context
-
-  // ✅ Dynamically create the correct links based on the active context
-  const courseDetailHref = activeSlug
-    ? `/${activeSlug}/courses/${slug}`
-    : `/courses/${slug}`;
-  const courseLearningHref = activeSlug
-    ? `/${activeSlug}/course-learning/${slug}` // Adjusted path
-    : `/course-learning/${slug}`;            // Adjusted path
-
+export default function LongCourseCard({
+  slug, title, short_description, instructor_name, rating_avg, num_students,
+  price, thumbnail, is_enrolled, category, level, progress,
+}: any) {
+  const { activeSlug } = useActiveOrg();
   const { addToCart } = useCart();
 
-const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
-  e.preventDefault();
-  e.stopPropagation();
+  const courseDetailHref = activeSlug ? `/${activeSlug}/courses/${slug}` : `/courses/${slug}`;
+  const courseLearningHref = activeSlug ? `/${activeSlug}/course-learning/${slug}` : `/course-learning/${slug}`;
 
-  const priceValue = price && price.startsWith("KES")
-    ? parseFloat(price.split(" ")[1])
-    : 0;
-
-  const itemToAdd: CartItem = {
-    type: "course",
-    slug,
-    title,
-    instructor_name: instructor || "Unknown Instructor",
-    price,
-    priceValue,
-    thumbnail,
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    const isFree = parseFloat(price) === 0;
+    const item: CartItem = {
+      type: "course", slug, title, instructor_name: instructor_name || "Expert Instructor",
+      price: isFree ? "Free" : `KES ${price}`,
+      priceValue: parseFloat(price) || 0,
+      thumbnail,
+    };
+    addToCart(item);
+    toast.success(`${title} added to cart`);
   };
 
-  addToCart(itemToAdd);
-
-  toast.success(`${title} added to cart`);
-};
-
-
   return (
-    <div className="w-full max-w-4xl mx-auto bg-white border border-gray-200 p-3 flex flex-col sm:flex-row gap-4 rounded hover:shadow-sm transition-shadow duration-300">
-      {/* IMAGE */}
-      <div className="w-full sm:w-1/3 md:w-1/3 flex justify-center items-center flex-shrink-0"> {/* Added flex-shrink-0 */}
-        <Link
-          href={courseDetailHref} // ✅ Use dynamic link
-          className="relative aspect-video bg-gray-100 flex items-center justify-center overflow-hidden rounded-md w-full"
-        >
-           <img
-             // Provide a default placeholder
-             src={thumbnail || "https://placehold.co/320x180/eee/ccc?text=Course"}
-             alt={title}
-             className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105" // Use group-hover
-           />
+    <div className="w-full bg-white border border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row gap-4 sm:gap-6 rounded-md transition-all duration-200 hover:border-primary group">
+      
+      <div className="w-full sm:w-64 md:w-72 flex-shrink-0">
+        <Link href={courseDetailHref} className="relative aspect-video block overflow-hidden rounded-lg bg-gray-50 border border-gray-100">
+          <img 
+            src={thumbnail || "https://placehold.co/320x180?text=Course"} 
+            alt={title} 
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
+          />
+          {category && (
+            <div className="absolute top-2 left-2 bg-white/95 text-[10px] font-bold px-2 py-0.5 rounded text-primary uppercase shadow-sm tracking-tighter">
+              {category}
+            </div>
+          )}
         </Link>
       </div>
 
-      {/* CONTENT */}
-      <div className="flex-1 flex flex-col">
-        {/* ✅ Use dynamic link */}
-        <Link href={courseDetailHref}>
-          <h3 className="font-bold text-lg text-gray-900 hover:text-[#2694C6] transition-colors line-clamp-1"> {/* Added line-clamp */}
-            {title}
-          </h3>
-        </Link>
-
-        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{description || 'No description provided.'}</p>
-        <p className="text-xs text-gray-500 mt-2">{instructor || 'Unknown Instructor'}</p>
-
-        <div className="mt-2">
-          {/* Use Math.max to ensure reviewCount isn't negative */}
-          <StarRating rating={rating || 0} reviewCount={Math.max(0, reviewCount || 0)} />
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex justify-between items-start gap-4">
+          <Link href={courseDetailHref} className="flex-1">
+            <h3 className="font-bold text-[18px] sm:text-[19px] leading-tight text-gray-900 group-hover:text-primary transition-colors line-clamp-2">
+              {title}
+            </h3>
+          </Link>
+          <div className="flex-shrink-0">
+            {!is_enrolled && <WishlistButton slug={slug} type="course" />}
+          </div>
         </div>
 
-        <div className="mt-auto pt-4 flex items-center justify-between flex-wrap gap-2"> {/* Added flex-wrap and gap */}
+        <p className="text-[14px] text-gray-600 mt-1.5 line-clamp-2 leading-relaxed">
+          {short_description}
+        </p>
+        
+        <p className="text-[13px] text-gray-900 font-bold mt-2">{instructor_name}</p>
 
-          {is_enrolled ? (
-            <span className="text-sm font-semibold bg-green-100 text-green-700 py-1 px-3 rounded-full whitespace-nowrap"> {/* Added whitespace-nowrap */}
-              Enrolled
+        <div className="flex flex-wrap items-center justify-between mt-3 pt-3 border-t border-gray-50 gap-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[15px] font-black text-yellow-700">
+              {rating_avg > 0 ? rating_avg.toFixed(1) : "0.0"}
             </span>
-          ) : (
-            // Display 'Free' if price is not a typical currency format or is 0
-            <p className="font-bold text-lg text-gray-900">
-              {price && price.startsWith('KES') && parseFloat(price.split(' ')[1]) > 0 ? price : 'Free'}
-            </p>
-          )}
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star 
+                  key={i} 
+                  size={20} 
+                  strokeWidth={2.5}
+                  className={cn(
+                    "transition-colors",
+                    i < Math.round(rating_avg) ? "fill-yellow-400 text-yellow-400" : "text-gray-200 fill-transparent"
+                  )} 
+                />
+              ))}
+            </div>
+          </div>
 
-          {is_enrolled ? (
-            <Link
-              href={courseLearningHref} // ✅ Use dynamic link
-              className="bg-green-600 text-white font-semibold py-2 px-5 rounded text-sm hover:bg-green-700 transition-colors whitespace-nowrap" // Added whitespace-nowrap
-            >
-              Continue Learning
-            </Link>
-          ) : (
-            <div className="flex items-center space-x-3">
-              {/* Ensure WishlistButton receives the correct slug */}
-              <WishlistButton slug={slug} type="course" />
-              <button
-                className="bg-[#2694C6] text-white font-semibold py-2 px-5 rounded-md text-sm hover:bg-[#1f7ba5] transition-colors whitespace-nowrap" // Added whitespace-nowrap
-                onClick={handleAddToCart}
+          <div className="flex items-center gap-4 text-[12px] text-gray-500 font-bold">
+            <div className="flex items-center gap-1.5"><BarChart size={18} className="text-gray-400" /><span>{level}</span></div>
+            <div className="flex items-center gap-1.5"><Users size={18} className="text-gray-400" /><span>{num_students?.toLocaleString()}</span></div>
+          </div>
+        </div>
+
+        <div className="mt-auto pt-4 flex flex-row items-center justify-between border-t border-gray-100 gap-4">
+          <div className="flex-1">
+            {is_enrolled ? (
+              <div className="w-full max-w-[280px]">
+                <div className="flex justify-between text-[11px] font-bold text-primary mb-1.5 uppercase tracking-tight">
+                  <span>Course Progress</span>
+                  <span>{Math.round(progress || 0)}%</span>
+                </div>
+                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-700" 
+                    style={{ width: `${progress || 0}%` }} 
+                  />
+                </div>
+              </div>
+            ) : (
+              <span className="font-bold text-[20px] text-gray-900 tracking-tight">
+                {parseFloat(price) > 0 ? `KES ${parseFloat(price).toLocaleString()}` : "Free"}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {is_enrolled ? (
+              <Link 
+                href={courseLearningHref} 
+                className="bg-green-600 text-white font-bold py-2.5 px-6 rounded-md text-xs hover:bg-green-700 transition-colors uppercase tracking-wider shadow-sm"
+              >
+                Continue
+              </Link>
+            ) : (
+              <button 
+                onClick={handleAddToCart} 
+                className="bg-primary text-white font-bold py-2.5 px-6 rounded-md text-xs hover:bg-primary/90 transition-all active:scale-95 uppercase tracking-wider shadow-sm"
               >
                 Add to Cart
               </button>
-            </div>
-          )}
-
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default LongCourseCard;
+}

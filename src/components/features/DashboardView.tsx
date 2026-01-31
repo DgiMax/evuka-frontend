@@ -4,183 +4,85 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { 
+  Building2, ShieldCheck, Video, 
+  ArrowRight, PlayCircle, Clock, Calendar 
+} from "lucide-react";
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
+
 import EnrolledCourseCard from "./EnrolledCourseCard";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api/axios";
 import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
-import { Building2, ShieldCheck } from "lucide-react";
-import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
-interface Course {
-  slug: string;
+interface LiveSession {
+  id: number;
   title: string;
-  tutor: string;
-  progress: number;
+  course: string;
+  start: string;
+  is_live: boolean;
+  room_id: string | null;
+}
+
+interface DashboardCourse {
+  id: number;
+  title: string;
+  slug: string;
   thumbnail: string | null;
+  progress: number;
+  is_completed: boolean;
+  next_lesson: string;
 }
 
-interface Event {
-  slug: string;
+interface DashboardEvent {
   title: string;
-  start_time: string;
-  banner_image: string | null;
+  slug: string;
+  start: string;
+  type: string;
+  banner: string | null;
 }
 
-interface Organization {
+interface DashboardBook {
+  title: string;
+  slug: string;
+  cover: string | null;
+  author: string;
+}
+
+interface DashboardOrg {
   name: string;
   slug: string;
   logo: string | null;
-  level: string;
+  level: string | null;
 }
 
 interface DashboardData {
-  context_type: "personal" | "organization";
-  display_name: string;
-  enrolled_courses: Course[];
-  registered_events: Event[];
-  my_organizations?: Organization[];
+  greeting: string;
+  context: {
+    type: "personal" | "organization";
+    label: string;
+    org_slug: string | null;
+  };
+  live_now: LiveSession[];
+  courses: DashboardCourse[];
+  events: DashboardEvent[];
+  library: DashboardBook[];
+  organizations: DashboardOrg[];
 }
 
-const EmptyPlaceholder = ({ message }: { message: string }) => (
-  <div className="flex items-center justify-center p-8 bg-gray-50 border border-dashed border-gray-300 rounded-md col-span-full h-32">
-    <p className="text-gray-500 text-base italic text-center">{message}</p>
-  </div>
-);
-
-const DashboardSkeleton = () => (
-  <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="rounded-md p-6 md:p-8 mb-8 relative shadow-sm bg-gray-100 h-40 flex flex-col justify-center">
-        <Skeleton width={100} className="mb-2" />
-        <Skeleton width="50%" height={32} className="mb-2" />
-        <Skeleton width="30%" />
-      </div>
-
-      {[1, 2, 3].map((section) => (
-        <section key={section} className="mb-10 p-6 bg-white rounded-md shadow-sm border border-gray-200">
-          <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-3">
-            <Skeleton width={200} height={24} />
-            <Skeleton width={80} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((card) => (
-              <div key={card} className="border border-gray-200 rounded-md overflow-hidden bg-white">
-                <Skeleton height={140} />
-                <div className="p-4">
-                  <Skeleton width="80%" height={20} className="mb-2" />
-                  <Skeleton width="40%" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  </SkeletonTheme>
-);
-
-const OrganizationList = ({ orgs }: { orgs: Organization[] }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    {orgs.length > 0 ? (
-      orgs.map((org) => (
-        <Link href={`/${org.slug}`} key={org.slug} className="block group h-full">
-            <div className="bg-card p-4 border border-border h-full rounded-lg shadow-sm hover:shadow-md hover:border-primary transition-all flex items-start space-x-4">
-                
-                <div className="relative h-16 w-16 flex-shrink-0 bg-muted rounded-full border border-border overflow-hidden">
-                    {org.logo ? (
-                        <Image
-                            src={org.logo}
-                            alt={org.name}
-                            fill
-                            className="object-cover"
-                        />
-                    ) : (
-                        <div className="flex items-center justify-center h-full w-full text-muted-foreground">
-                            <Building2 className="w-8 h-8" />
-                        </div>
-                    )}
-                </div>
-                
-                <div className="flex-grow min-w-0">
-                    <h3 className="font-bold text-foreground text-base group-hover:text-primary transition-colors leading-snug break-words">
-                        {org.name}
-                    </h3>
-                    
-                    <div className="flex items-center mt-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/30">
-                            <ShieldCheck className="w-3 h-3 mr-1" />
-                            {org.level || "Member"}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </Link>
-      ))
-    ) : (
-      <EmptyPlaceholder message="You are not a member of any organization yet." />
+const SectionHeader = ({ title, link, linkText }: { title: string; link?: string; linkText?: string }) => (
+  <div className="flex flex-row justify-between items-center mb-6 border-b border-gray-100 pb-3">
+    <h2 className="text-sm md:text-base font-black text-gray-900 uppercase tracking-tighter">{title}</h2>
+    {link && (
+      <Link href={link} className="text-[10px] font-black uppercase tracking-widest text-[#2694C6] hover:underline flex items-center gap-1">
+        {linkText} <ArrowRight size={12} />
+      </Link>
     )}
   </div>
 );
-
-const CourseList = ({ courses }: { courses: Course[] }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    {courses.length > 0 ? (
-      courses.map((course) => (
-        <EnrolledCourseCard key={course.slug} course={course} />
-      ))
-    ) : (
-      <EmptyPlaceholder message="You haven't enrolled in any active courses yet. Start your learning journey!" />
-    )}
-  </div>
-);
-
-const EventList = ({ events }: { events: Event[] }) => {
-  const { activeSlug } = useActiveOrg();
-  const PRIMARY_BLUE_HOVER = "hover:text-[#2E7FA0]";
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {events.length > 0 ? (
-        events.map((event) => {
-          const eventHref = activeSlug
-            ? `/${activeSlug}/events/${event.slug}`
-            : `/events/${event.slug}`;
-          return (
-            <Link href={eventHref} key={event.slug} className="block group h-full">
-              <div className="bg-white p-1 overflow-hidden border border-gray-200 h-full rounded-md shadow-sm hover:shadow-md transition-all flex flex-col">
-                <div className="relative h-32 w-full flex-shrink-0">
-                  <Image
-                    src={event.banner_image || "/placeholder.svg"}
-                    alt={event.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover group-hover:opacity-90 transition-opacity rounded-sm"
-                  />
-                </div>
-                <div className="p-3 flex flex-col flex-grow justify-center">
-                  <h3 className={`font-bold text-sm mb-0.5 line-clamp-2 leading-snug text-gray-800 ${PRIMARY_BLUE_HOVER}`}>
-                    {event.title}
-                  </h3>
-                  <p className="text-gray-500 text-xs">
-                    {new Date(event.start_time).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          );
-        })
-      ) : (
-        <EmptyPlaceholder message="You have no upcoming events registered." />
-      )}
-    </div>
-  );
-};
 
 export default function DashboardView() {
   const { user, loading } = useAuth();
@@ -188,150 +90,241 @@ export default function DashboardView() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!loading && !user) router.push("/login");
   }, [loading, user, router]);
 
   useEffect(() => {
     if (!user) return;
-
-    let isMounted = true;
-    setFetching(true);
-    setError(null);
-
     const fetchDashboardData = async () => {
-      let apiUrl = "/users/dashboard/";
-      if (activeSlug) {
-        apiUrl = `/users/dashboard/?active_org=${activeSlug}`;
-      }
-
+      setFetching(true);
       try {
-        const res = await api.get(apiUrl);
-        if (isMounted) {
-          setData(res.data);
-        }
+        const url = activeSlug ? `/users/dashboard/?active_org=${activeSlug}` : "/users/dashboard/";
+        const res = await api.get(url);
+        setData(res.data);
       } catch (err) {
-        if (isMounted) {
-          setError("Could not load dashboard data.");
-        }
+        console.error(err);
       } finally {
-        if (isMounted) {
-          setFetching(false);
-        }
+        setFetching(false);
       }
     };
-
     fetchDashboardData();
-
-    return () => {
-      isMounted = false;
-    };
-
   }, [user, activeSlug]);
 
-  if (loading || (fetching && !data)) {
-    return <DashboardSkeleton />;
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-red-500 text-lg">{error}</p>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500 text-lg">Dashboard data is unavailable.</p>
-      </div>
-    );
-  }
-
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
-  const welcomeMessage =
-    data.context_type === "personal"
-      ? "Every step forward counts — dive back into your learning."
-      : `Viewing the dashboard for ${data.display_name}.`;
-
-  const coursesLink = activeSlug ? `/${activeSlug}/courses` : "/courses";
-  const eventsLink = activeSlug ? `/${activeSlug}/events` : "/events";
+  if (loading || (fetching && !data)) return <DashboardSkeleton />;
+  if (!data) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-
-        <div className="bg-gradient-to-r from-primary to-[#5BB5D8] rounded-lg p-5 sm:p-6 md:p-8 mb-8 relative shadow-xl">
-            <p className="text-white/90 text-xs sm:text-sm mb-1">{currentDate}</p>
-            <h1 className="text-white text-xl sm:text-2xl md:text-3xl font-bold mb-1 break-words">
-                Welcome{data.context_type === "personal" ? " back" : ""}, {data.display_name}!
-            </h1>
-            <p className="text-white/80 text-xs sm:text-sm md:text-base leading-snug">
-                {welcomeMessage}
-            </p>
-        </div>
-
-        {!activeSlug && data.my_organizations && (
-          <section className="mb-10 p-6 bg-white rounded-md shadow-sm border border-gray-200">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-border/70 pb-3">
-                <h2 className="text-xl md:text-2xl font-bold text-foreground shrink-0">
-                    My Organizations
-                </h2>
-                <Link
-                    href="/organizations/browse"
-                    className="text-sm text-primary hover:text-primary/80 font-medium transition-colors mt-2 sm:mt-0"
-                >
-                    Browse More
-                </Link>
+    <div className="min-h-screen bg-[#F8F9FA] pb-20">
+      <div className="bg-primary pt-12 pb-24">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-2 text-white">
+              <div className="flex items-center gap-2 font-black uppercase text-[10px] tracking-[0.2em] opacity-70">
+                <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                {data.context.label}
+              </div>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tighter">
+                {data.greeting}!
+              </h1>
+              <p className="opacity-70 text-sm md:text-base font-medium max-w-xl leading-tight">
+                {data.context.type === "personal" 
+                  ? "Your learning journey continues. Pick up exactly where you left off." 
+                  : `Welcome to the ${data.context.label} learning portal.`}
+              </p>
             </div>
-            <OrganizationList orgs={data.my_organizations} />
+            
+            {data.organizations.length > 0 && !activeSlug && (
+              <div className="flex -space-x-3 overflow-hidden">
+                {data.organizations.map((org) => (
+                  <Link key={org.slug} href={`/${org.slug}`} title={org.name}>
+                    <div className="inline-block h-10 w-10 rounded-full ring-2 ring-primary bg-white overflow-hidden relative border border-white/20">
+                      {org.logo ? (
+                        <Image src={org.logo} alt={org.name} fill className="object-cover" />
+                      ) : (
+                        <Building2 className="p-2 text-gray-400" />
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 max-w-7xl -mt-12 space-y-8">
+        {data.live_now.length > 0 && (
+          <section className="bg-white rounded-md border border-border shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Video className="text-[#2694C6]" size={20} />
+              <h2 className="text-sm font-black uppercase tracking-tighter text-gray-900">Upcoming Live Sessions</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {data.live_now.map((session) => {
+                const startTime = new Date(session.start);
+                const activationTime = new Date(startTime.getTime() - 20 * 60000);
+                const canJoin = now >= activationTime;
+
+                return (
+                  <div key={session.id} className="bg-gray-50 border border-gray-100 rounded-md p-5 flex flex-col justify-between group transition-all hover:border-[#2694C6]/30">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[9px] font-black text-[#2694C6] uppercase tracking-widest">{session.course}</p>
+                        <div className="flex items-center gap-3 text-gray-400">
+                          <div className="flex items-center gap-1">
+                            <Calendar size={10} />
+                            <span className="text-[9px] font-bold">
+                                {startTime.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock size={10} />
+                            <span className="text-[9px] font-bold">
+                                {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <h3 className="font-bold text-sm text-gray-900 leading-tight mb-4">{session.title}</h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Button 
+                        disabled={!canJoin}
+                        className={cn(
+                          "w-full h-10 font-black uppercase text-[10px] tracking-widest transition-all",
+                          canJoin ? "bg-[#2694C6] hover:bg-[#1e7ca8] text-white shadow-md" : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        )}
+                        onClick={() => router.push(`/live/${session.id}`)}
+                      >
+                        {canJoin ? "Join Live Now" : "Locked"}
+                      </Button>
+                      {!canJoin && (
+                        <p className="text-[8px] text-center text-amber-600 font-black uppercase tracking-widest">
+                          Room activates 20m before schedule
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </section>
         )}
 
-        <section className="mb-10 p-6 bg-white rounded-md shadow-sm border border-gray-200">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-border/70 pb-3">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground shrink-0">
-                  My Enrolled Courses
-              </h2>
-              {!activeSlug && (
-                  <Link
-                      href={coursesLink}
-                      className="text-sm text-primary hover:text-primary/80 font-medium transition-colors mt-2 sm:mt-0"
-                  >
-                      Browse All
-                  </Link>
-              )}
-          </div>
-          <CourseList courses={data.enrolled_courses} />
-        </section>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <section className="bg-white rounded-md border border-border p-6 shadow-sm">
+              <SectionHeader title="My Learning" link={activeSlug ? `/${activeSlug}/courses` : "/courses"} linkText="Explore All" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {data.courses.map((course) => (
+                  <EnrolledCourseCard key={course.slug} course={course} />
+                ))}
+                {data.courses.length === 0 && (
+                  <div className="col-span-full py-12 text-center bg-gray-50 rounded border-2 border-dashed flex flex-col items-center">
+                    <PlayCircle size={32} className="text-gray-300 mb-2" />
+                    <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">No Active Enrollments</p>
+                  </div>
+                )}
+              </div>
+            </section>
 
-        <section className="p-6 bg-white rounded-md shadow-sm border border-gray-200">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-border/70 pb-3">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground shrink-0">
-                  Upcoming Events
-              </h2>
-              {!activeSlug && (
-                  <Link
-                      href={eventsLink}
-                      className="text-sm text-primary hover:text-primary/80 font-medium transition-colors mt-2 sm:mt-0"
-                  >
-                      View Events
+            <section className="bg-white rounded-md border border-border p-6 shadow-sm">
+              <SectionHeader title="My Library" link="/books" linkText="Open Library" />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {data.library.map((book) => (
+                  <Link href={`/books/${book.slug}`} key={book.slug} className="group">
+                    <div className="aspect-[3/4] relative rounded-sm overflow-hidden shadow-sm border border-gray-100 mb-2 bg-gray-50">
+                      <Image src={book.cover || "/placeholder.svg"} alt={book.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                    </div>
+                    <h4 className="text-[10px] font-black text-gray-900 uppercase leading-tight line-clamp-1 group-hover:text-[#2694C6] transition-colors">{book.title}</h4>
+                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">{book.author}</p>
                   </Link>
-              )}
+                ))}
+              </div>
+            </section>
           </div>
-          <EventList events={data.registered_events} />
-        </section>
+
+          <div className="space-y-8">
+            <section className="bg-white rounded-md border border-border p-6 shadow-sm">
+              <SectionHeader title="Events Calendar" link="/events" linkText="View All" />
+              <div className="space-y-5">
+                {data.events.map((event) => (
+                  <Link href={`/events/${event.slug}`} key={event.slug} className="flex gap-4 group">
+                    <div className="h-14 w-14 shrink-0 relative rounded-sm overflow-hidden bg-gray-100 border border-gray-100">
+                      <Image src={event.banner || "/placeholder.svg"} alt="" fill className="object-cover" />
+                    </div>
+                    <div className="min-w-0 flex flex-col justify-center">
+                      <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-tighter leading-tight line-clamp-1 group-hover:text-[#2694C6] transition-colors">
+                        {event.title}
+                      </h4>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[9px] font-black text-[#2694C6] uppercase bg-[#2694C6]/5 px-1.5 py-0.5 rounded">{event.type}</span>
+                        <span className="text-[9px] text-gray-400 font-bold">
+                          {new Date(event.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            {!activeSlug && data.organizations.length > 0 && (
+              <section className="bg-white rounded-md border border-border p-6 shadow-sm">
+                <SectionHeader title="Organizations" />
+                <div className="space-y-3">
+                  {data.organizations.map((org) => (
+                    <Link href={`/${org.slug}`} key={org.slug} className="flex items-center justify-between p-3 rounded-md bg-gray-50 hover:bg-[#2694C6]/5 transition-all border border-gray-100 group">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 relative rounded-full overflow-hidden bg-white border border-gray-200">
+                          {org.logo ? <Image src={org.logo} alt="" fill className="object-cover" /> : <Building2 size={14} className="m-2 text-gray-400" />}
+                        </div>
+                        <span className="text-[11px] font-black text-gray-900 uppercase tracking-tighter group-hover:text-[#2694C6]">{org.name}</span>
+                      </div>
+                      <ShieldCheck size={14} className="text-[#2694C6]" />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
+const DashboardSkeleton = () => (
+  <SkeletonTheme baseColor="#f3f4f6" highlightColor="#ffffff">
+    <div className="min-h-screen bg-[#F8F9FA]">
+      <div className="bg-primary pt-12 pb-24">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <Skeleton width={150} height={12} className="mb-4 opacity-20" />
+          <Skeleton width={300} height={40} className="mb-4 opacity-20" />
+          <Skeleton width={500} height={20} className="opacity-20" />
+        </div>
+      </div>
+      <div className="container mx-auto px-4 max-w-7xl -mt-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <Skeleton height={400} borderRadius={8} />
+            <Skeleton height={250} borderRadius={8} />
+          </div>
+          <div className="space-y-8">
+            <Skeleton height={350} borderRadius={8} />
+            <Skeleton height={200} borderRadius={8} />
+          </div>
+        </div>
+      </div>
+    </div>
+  </SkeletonTheme>
+);

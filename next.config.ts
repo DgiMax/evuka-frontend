@@ -8,7 +8,6 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "api.e-vuka.com",
-        port: "",
         pathname: "/media/**",
       },
       {
@@ -20,13 +19,16 @@ const nextConfig = {
       {
         protocol: "http",
         hostname: "127.0.0.1",
-        port: "", 
         pathname: "/media/**",
       },
       {
         protocol: "https",
         hostname: "placehold.co",
-        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "evuka-cdn.b-cdn.net",
         pathname: "/**",
       },
     ],

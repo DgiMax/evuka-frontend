@@ -20,16 +20,19 @@ import { Building, Plus, Search } from "lucide-react";
 
 const PERSONAL_ACCOUNT_VALUE = "__personal__";
 
-// Define domains. Fallback to production URLs if Env vars are missing.
 const STUDENT_DOMAIN = process.env.NEXT_PUBLIC_STUDENT_URL || "https://e-vuka.com";
 const TUTOR_DOMAIN = process.env.NEXT_PUBLIC_TUTOR_URL || "https://tutors.e-vuka.com";
 
 interface OrganizationSwitcherProps {
   triggerClassName?: string;
+  fullWidth?: boolean;
+  height?: string;
 }
 
 export default function OrganizationSwitcher({
   triggerClassName,
+  fullWidth = false,
+  height,
 }: OrganizationSwitcherProps) {
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -43,39 +46,27 @@ export default function OrganizationSwitcher({
   const handleSelectChange = (value: string) => {
     if (value === selectedValue) return;
 
-    // 1. Handle Personal Account Switch
     if (value === PERSONAL_ACCOUNT_VALUE) {
-      // Logic: If on tutor domain, maybe force them to student domain for personal? 
-      // For now, we assume personal dashboard exists on the current domain.
       router.push("/");
       return;
     }
 
-    // 2. Find the target organization details
     const targetOrg = organizations.find((org) => org.organization_slug === value);
 
     if (!targetOrg) {
-      // Fallback if org not found in context (shouldn't happen)
       router.push(`/${value}/`);
       return;
     }
 
-    // 3. Determine Target Domain based on Role
     const isStudentRole = targetOrg.role === "student";
     const targetBaseUrl = isStudentRole ? STUDENT_DOMAIN : TUTOR_DOMAIN;
-
-    // 4. Check if we are ALREADY on that domain
-    // We strip protocols/slashes to compare strictly domain parts or full origins
-    const currentOrigin = window.location.origin; // e.g., "https://tutors.e-vuka.com"
+    const currentOrigin = window.location.origin;
     
-    // Helper to normalize URLs for comparison (remove trailing slashes)
     const normalize = (url: string) => url.replace(/\/$/, "");
 
     if (normalize(currentOrigin) === normalize(targetBaseUrl)) {
-      // SAME DOMAIN: Use Client-Side Navigation (Faster)
       router.push(`/${value}/`);
     } else {
-      // DIFFERENT DOMAIN: Use Hard Redirect
       window.location.href = `${targetBaseUrl}/${value}/`;
     }
   };
@@ -88,14 +79,16 @@ export default function OrganizationSwitcher({
     >
       <SelectTrigger
         className={cn(
-          "justify-between truncate", 
+          "justify-between truncate shadow-none",
+          fullWidth && "w-full px-4 text-base",
+          height ? height : "h-10",
           triggerClassName
         )}
         aria-label="Select account or organization"
       >
         <SelectValue placeholder="Select account..." />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="shadow-sm border-border">
         <SelectGroup>
           <SelectItem value={PERSONAL_ACCOUNT_VALUE}>
             {user.username} (Personal)
@@ -133,7 +126,6 @@ export default function OrganizationSwitcher({
           </>
         )}
 
-        {/* Action links */}
         <SelectSeparator />
         <SelectGroup>
           <SelectLabel>Actions</SelectLabel>

@@ -77,14 +77,13 @@ export default function CheckoutPage() {
     try {
       const orderResponse = await api.post("/orders/", {
         items: cartItems.map((item) => ({
-          ...(item.type === "course" ? { course: item.slug } : { event: item.slug }),
+          [item.type]: item.slug,
           price: item.priceValue.toFixed(2),
           quantity: 1,
         })),
       });
 
-      const order = orderResponse.data;
-      const orderId = order.id;
+      const orderId = orderResponse.data.id;
 
       const paymentResponse = await api.post(
         `/payments/initiate/${orderId}/`,
@@ -97,7 +96,7 @@ export default function CheckoutPage() {
       const paymentData = paymentResponse.data;
 
       if (paymentData.free_order) {
-        toast.success("Enrollment successful!");
+        toast.success("Order successful!");
         clearCart(); 
         router.push(paymentData.redirect_url || "/dashboard");
         return; 
@@ -110,7 +109,7 @@ export default function CheckoutPage() {
       }
     } catch (err: any) {
       console.error("Payment Error:", err);
-      const errorMessage = err.response?.data?.detail || "Failed to process payment.";
+      const errorMessage = err.response?.data?.error || err.response?.data?.detail || "Failed to process payment.";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -161,7 +160,7 @@ export default function CheckoutPage() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    We'll send the receipt and course details here.
+                    We'll send the receipt and access details here.
                   </p>
                 </div>
               </CardContent>
@@ -270,7 +269,7 @@ export default function CheckoutPage() {
                     ) : (
                         total === 0 ? (
                             <>
-                                Enroll for Free <ArrowRight className="w-4 h-4 ml-2" />
+                                Claim Free Access <ArrowRight className="w-4 h-4 ml-2" />
                             </>
                         ) : (
                             <>

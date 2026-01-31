@@ -2,33 +2,33 @@
 
 import React from "react";
 import { useRouter } from 'next/navigation';
-import { Heart } from "lucide-react";
+import { Heart, ShoppingCart, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart, CartItem } from '@/context/CartContext';
 import { WishlistButton } from "@/components/ui/WishlistButton";
 import { toast } from "sonner";
 
-export function CourseActions({ course }: { course: any }) {
+export function BookActions({ book }: { book: any }) {
   const { addToCart } = useCart();
   const router = useRouter();
 
   const handleAddToCart = () => {
     const item: CartItem = {
-      type: 'course',
-      slug: course.slug,
-      title: course.title,
-      instructor_name: course.instructor?.creator_name || 'Unknown',
-      price: `KES ${course.price}`,
-      priceValue: parseFloat(course.price) || 0,
-      thumbnail: course.thumbnail,
+      type: 'book',
+      slug: book.slug,
+      title: book.title,
+      instructor_name: book.authors || book.publisher?.publisher_name || 'Unknown Author',
+      price: `KES ${book.price}`,
+      priceValue: parseFloat(book.price) || 0,
+      thumbnail: book.cover_image,
     };
     addToCart(item);
-    toast.success(`${course.title} added to cart`);
+    toast.success(`${book.title} added to cart`);
   };
 
   const handleMainAction = () => {
-    if (course.is_enrolled) {
-      router.push(`/course-learning/${course.slug}`);
+    if (book.is_owned) {
+      router.push(`/books/read/${book.slug}`);
     } else {
       handleAddToCart();
       router.push('/cart');
@@ -41,10 +41,14 @@ export function CourseActions({ course }: { course: any }) {
         onClick={handleMainAction}
         className="w-full h-12 bg-[#2694C6] text-white font-black uppercase text-[11px] tracking-widest rounded-md shadow-none hover:bg-[#1e7ca8] transition-all active:scale-[0.98]"
       >
-        {course.is_enrolled ? 'Continue Learning' : 'Enroll Now'}
+        {book.is_owned ? (
+          <span className="flex items-center gap-2"><BookOpen size={16} /> Read Now</span>
+        ) : (
+          'Buy Now'
+        )}
       </Button>
 
-      {!course.is_enrolled && (
+      {!book.is_owned && (
         <div className="flex items-center gap-2">
           <Button 
             onClick={handleAddToCart}
@@ -53,12 +57,12 @@ export function CourseActions({ course }: { course: any }) {
           >
             Add to Cart
           </Button>
-          <WishlistButton slug={course.slug} type="course" />
+          <WishlistButton slug={book.slug} type="book" />
         </div>
       )}
       
-      <p className="text-[9px] text-center text-gray-400 font-black uppercase tracking-[0.15em] mt-2">
-        30-Day Money-Back Guarantee
+      <p className="text-[9px] text-center text-gray-400 font-black uppercase tracking-[0.15em] mt-2 leading-none">
+        Secure Digital Delivery
       </p>
     </div>
   );

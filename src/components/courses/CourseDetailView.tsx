@@ -1,271 +1,470 @@
 "use client";
 
-import { HeartIcon } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
 import { CourseModulesClient } from "@/components/courses/CourseModulesClient";
 import { CourseActions } from '@/components/courses/CourseActions';
 import api from "@/lib/api/axios";
-import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+import { 
+  Star, ChevronDown, ChevronUp, BookOpen, Globe, Info, X, Verified,
+  InboxIcon, UserCheck2, ArrowLeft, CheckCircle2, Users, Award,
+  BarChart, PlayCircle, Clock, Infinity
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { useActiveOrg } from "@/lib/hooks/useActiveOrg";
-import Link from "next/link";
-import CourseDetailSkeleton from "@/components/skeletons/CourseDetailSkeleton";
+import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
-type IconProps = {
-  className?: string;
-};
-
-const StarIcon = ({ filled = true, className = "w-5 h-5" }: { filled?: boolean, className?: string }) => (
-  <svg className={`${className} ${filled ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
-    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.368-2.448a1 1 0 00-1.176 0l-3.368 2.448c-.784.57-1.838-.197-1.54-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z" />
-  </svg>
-);
-
-const ChevronDownIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24">
-    <path
-      fill="#000"
-      d="M12.707 15.707a1 1 0 0 1-1.414 0L5.636 10.05A1 1 0 1 1 7.05 8.636l4.95 4.95 4.95-4.95a1 1 0 0 1 1.414 1.414z"
-    />
-  </svg>
-);
-
-const PointIcon = ({ className = "w-6 h-6" }: IconProps) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0"/></svg>
-);
-
-
-// --- TYPE DEFINITIONS (Unchanged) ---
-type Lesson = {
-  title: string;
-  is_preview: boolean;
-  estimated_duration_minutes: number;
-};
-type Module = {
-  title: string;
-  description: string;
-  lessons_count: number;
-  lessons: Lesson[];
-};
-export type CourseDetails = {
-  slug: string;
-  title: string;
-  short_description: string;
-  long_description: string;
-  learning_objectives: string[];
-  promo_video: string;
-  thumbnail: string;
-  instructor: {
-    username: string;
-    creator_name: string;
-    bio: string;
-  };
-  organization_name: string;
-  category: { name: string; slug: string };
-  level: { name: string };
-  price: string;
-  rating_avg: number;
-  num_students: number;
-  num_ratings: number;
-  modules: Module[];
-  is_enrolled: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-// --- SUB-COMPONENTS (Unchanged) ---
-const StickySidebar = ({ course }: { course: CourseDetails }) => (
-  <div className="sticky top-2">
-    <div className="border border-gray-200 rounded bg-white p-6">
-      <p className="text-xs text-gray-500">
-        Updated {new Date(course.updated_at).toLocaleDateString() || 'Oct 2025'}
-      </p>
-      <div className="mt-4 text-sm text-gray-700 space-y-1">
-        <p>{course.level?.name || 'Beginner'} • 12 hours total</p>
-        <p>{course.num_students || '0'} students</p>
+const StickySidebar = ({ course }: { course: any }) => (
+  <div className="relative lg:sticky lg:top-20 border-2 border-border rounded-md bg-card overflow-hidden w-full">
+    <div className="aspect-video bg-muted relative border-b border-border flex items-center justify-center">
+      {course?.thumbnail ? (
+        <img src={course.thumbnail} alt="Preview" className="w-full h-full object-cover" />
+      ) : (
+        <BookOpen className="h-10 w-10 text-muted-foreground/20" />
+      )}
+    </div>
+    
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="space-y-1">
+        <h3 className="text-2xl md:text-3xl font-black text-foreground">
+          {Number(course?.price || 0) > 0 ? `KES ${Number(course.price).toLocaleString()}` : 'Free'}
+        </h3>
+        <p className="text-[10px] font-black uppercase tracking-widest text-[#2694C6]">Full Lifetime Access</p>
       </div>
-      <div className="flex items-center my-3">
-        {[...Array(5)].map((_, i) => (
-          <StarIcon key={i} filled={i < Math.round(course.rating_avg)} />
-        ))}
-      </div>
-      <p className="text-3xl font-bold text-gray-900 mb-4">
-        KES {course.price || '0.00'}
-      </p>
-      
+
       <CourseActions course={course} />
     </div>
   </div>
 );
-const LearningObjectives = ({ objectives }: { objectives: string[] }) => (
-  <div className="border border-gray-200 rounded-md p-6 my-8">
-    <h2 className="text-xl font-bold mb-4 text-gray-900">Learning Objectives</h2>
-    <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-gray-700">
-      {objectives?.length ? (
-        objectives.map((obj, index) => (
-          <li key={index} className="flex items-start">
-            <PointIcon className="w-5 h-5 text-gray-800 mr-3 mt-0.5" />
-            <span>{obj}</span>
-          </li>
-        ))
-      ) : (
-        <li>No objectives provided</li>
-      )}
-    </ul>
-  </div>
-);
-const CourseDescription = ({ description }: { description: string }) => (
-  <div>
-    <h2 className="text-2xl font-bold mb-4 text-gray-900">Course Description</h2>
-    <div
-      className="space-y-4 text-gray-700"
-    >
-      {description || 'No description available.'}
-    </div>
-  </div>
-);
-const CourseDetailsLoading = () => (
-  // ... (Your loading component is unchanged) ...
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-pulse">
-    <div className="lg:grid lg:grid-cols-3 lg:gap-x-8 xl:gap-x-10">
-      <aside className="mt-2 lg:mt-0">
-        <div className="sticky top-2">
-          <div className="border border-gray-200 rounded bg-white p-6">
-            <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-5 bg-gray-200 rounded w-1/2 mb-2"></div>
-            <div className="h-5 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-12 bg-gray-300 rounded w-full mb-3"></div>
-            <div className="h-12 bg-gray-200 rounded w-full"></div>
-          </div>
-        </div>
-      </aside>
-      <main className="lg:col-span-2">
-        <div className="aspect-video bg-gray-200 rounded-md mb-6"></div>
-        <div className="h-10 bg-gray-300 rounded w-3/4 mb-4"></div>
-        <div className="h-6 bg-gray-200 rounded w-full mb-6"></div>
-        <div className="h-5 bg-gray-200 rounded w-1/2 mb-8"></div>
-        <div className="border border-gray-200 rounded-md p-6 my-8">
-          <div className="h-8 bg-gray-300 rounded w-1/3 mb-4"></div>
-          <div className="h-5 bg-gray-200 rounded w-full mb-2"></div>
-          <div className="h-5 bg-gray-200 rounded w-full mb-2"></div>
-        </div>
-      </main>
-    </div>
-  </div>
-);
 
-export default function CourseDetailView() { 
-  const params = useParams(); 
-  const slug = params.slug as string; 
-  const { activeSlug } = useActiveOrg(); // ✅ ADDED: Get the active context
+export default function CourseDetailView() {
+  const params = useParams();
+  const router = useRouter();
+  const slug = params.slug as string;
+  const { activeSlug } = useActiveOrg();
   
-  const [course, setCourse] = useState<CourseDetails | null>(null);
+  const [course, setCourse] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user, loading: authLoading } = useAuth(); // Get auth status
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [tutorProfile, setTutorProfile] = useState<any | null>(null);
+  const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
+  const [loadingTutor, setLoadingTutor] = useState(false);
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
+
+  const descriptionThreshold = 800;
+  const isLongDescription = (course?.long_description?.length || 0) > descriptionThreshold;
 
   useEffect(() => {
-    if (slug && !authLoading) {
-      const fetchCourseData = async () => {
-        setLoading(true); // Reset loading state on fetch
-        setError(null);
-        setCourse(null); // Clear old course data
-        try {
-          // This 'api.get' call is now fully context-aware.
-          // The interceptor adds the 'X-Organization-Slug' header
-          // based on the 'activeSlug' from the layout.
-          const res = await api.get(`/courses/${slug}/`); 
-          setCourse(res.data);
-        } catch (err: any) {
-          console.error(err);
-          // Check for a 404 specifically
-          if (err.response && err.response.status === 404) {
-             setError("Course not found in this context.");
-          } else {
-             setError("Failed to load course data.");
-          }
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      fetchCourseData();
+    const fetchData = async () => {
+      try {
+        const res = await api.get(`/courses/${slug}/`);
+        setCourse(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [slug, activeSlug]);
+
+  const handleOpenTutorProfile = async () => {
+    if (!course?.instructor?.username) return;
+    setIsTutorModalOpen(true);
+    setLoadingTutor(true);
+    try {
+      const res = await api.get(`/users/tutor/${course.instructor.username}/`);
+      setTutorProfile(res.data);
+    } catch (err) {
+      console.error("Failed to load tutor profile");
+    } finally {
+      setLoadingTutor(false);
     }
-  }, [slug, user, authLoading, activeSlug]); // ✅ ADDED: activeSlug dependency
+  };
 
-  if (loading || authLoading) {
-    return <CourseDetailSkeleton />;
-  }
-  if (error) {
-    return (
-      <div className="bg-white text-gray-800 font-sans min-h-screen flex items-center justify-center">
-        <p className="text-red-500 text-lg">{error}</p>
-      </div>
-    );
-  }
-
-  if (!course) {
-    return (
-      <div className="bg-white text-gray-800 font-sans min-h-screen flex items-center justify-center">
-        <p className="text-gray-500 text-lg">Course not found.</p>
-      </div>
-    );
-  }
+  if (loading) return <CourseDetailSkeleton />;
 
   return (
-    <div className="bg-white text-gray-800 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="lg:grid lg:grid-cols-3 lg:gap-x-8 xl:gap-x-10">
-          {/* Sidebar */}
-          <aside className="mt-2 mb-4 lg:mb-0 lg:mt-0">
+    <div className="bg-white min-h-screen pb-20">
+      <div className="bg-[#1C1D1F] text-white py-10 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <Button
+              onClick={() => router.back()}
+              variant="ghost"
+              className="group flex items-center gap-2 text-gray-300 hover:text-white p-0 hover:bg-transparent font-black uppercase text-[10px] tracking-widest transition-all"
+            >
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+              Back
+            </Button>
+          </div>
+          <div className="lg:w-2/3 space-y-4">
+            <Badge className="bg-[#2694C6] text-white rounded-sm border-none font-black text-[10px] uppercase">
+              {course?.category?.name || "Professional Course"}
+            </Badge>
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+              {course?.title}
+            </h1>
+            <p className="text-base md:text-lg lg:text-xl text-gray-300 font-normal max-w-3xl leading-relaxed">
+              {course?.short_description}
+            </p>
+            
+            <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-3 pt-2 text-xs md:text-sm font-bold">
+              <div className="flex items-center gap-1.5 text-amber-400">
+                <span>{(course?.rating_avg ?? 0).toFixed(1)}</span>
+                <Star size={14} className="fill-amber-400" />
+                <span className="text-gray-400 underline decoration-dotted font-medium">
+                  ({(course?.num_ratings ?? 0).toLocaleString()} ratings)
+                </span>
+              </div>
+              <div className="text-white">
+                {(course?.num_students ?? 0).toLocaleString()} students
+              </div>
+              <div className="text-gray-400">
+                Created by <span onClick={handleOpenTutorProfile} className="text-[#2694C6] underline underline-offset-4 decoration-1 font-black cursor-pointer">{course?.instructor?.creator_name || course?.instructor?.instructor_name}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 text-[10px] md:text-xs font-bold text-gray-400 pt-2">
+               <div className="flex items-center gap-1.5"><Info size={14} /> Last updated {new Date(course?.updated_at).toLocaleDateString()}</div>
+               <div className="flex items-center gap-1.5"><Globe size={14} /> English</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8 lg:gap-12">
+          
+          <aside className="order-1 lg:order-2 lg:col-span-1 mt-6 lg:-mt-64 z-10 w-full max-w-md lg:max-w-none mx-auto lg:mx-0">
             <StickySidebar course={course} />
           </aside>
 
-          {/* Main Content */}
-          <main className="lg:col-span-2">
-            <div className="aspect-video bg-gray-900 rounded-md mb-6 flex items-center justify-center">
-              <img
-                src={course.promo_video || course.thumbnail || '/placeholder.jpg'}
-                alt={course.title}
-                className="w-full h-full object-cover rounded-md"
-              />
+          <main className="order-2 lg:order-1 lg:col-span-2 py-8 md:py-12 space-y-12">
+            {/* Summary Info Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 border border-border rounded-md bg-card">
+                <div className="space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Duration</p>
+                  <p className="text-sm font-bold flex items-center gap-2"><Clock size={14} className="text-[#2694C6]" /> {course?.duration || "Self-paced"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Lessons</p>
+                  <p className="text-sm font-bold flex items-center gap-2"><PlayCircle size={14} className="text-[#2694C6]" /> {course?.modules?.length || 0} Modules</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Skill Level</p>
+                  <p className="text-sm font-bold flex items-center gap-2">
+                    <BarChart size={14} className="text-[#2694C6]" /> 
+                    {/* FIX: Ensure we render a string, not the whole object */}
+                    {typeof course?.level === 'object' ? course.level.name : (course?.level || "Beginner")}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Access</p>
+                  <p className="text-sm font-bold flex items-center gap-2"><Infinity size={14} className="text-[#2694C6]" /> Lifetime</p>
+                </div>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-              {course.title}
-            </h1>
-            <p className="text-lg text-gray-600 mb-4">
-              {course.short_description || 'No short description available.'}
-            </p>
-            
-            <p className="text-sm text-gray-500 mb-6">
-              Instructor:{' '}
-              {course.instructor?.username ? (
-                <Link 
-                  href={`/tutor-profile/${course.instructor.username}`} 
-                  className="font-semibold text-[#2694C6] hover:underline"
-                >
-                  {course.instructor?.creator_name || 'Unknown Instructor'}
-                </Link>
-              ) : (
-                <span className="font-semibold text-gray-500 cursor-default">
-                  {course.instructor?.creator_name || 'Unknown Instructor'}
-                </span>
-              )}
-              {' '} — {course.instructor?.bio || 'No bio available.'}
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              Organization: {course.organization_name || 'Independent'} | Category:{' '}
-              {course.category?.name || 'General'}
-            </p>
+            <div className="border border-border rounded-md p-5 md:p-8 bg-card">
+              <h2 className="text-lg md:text-xl font-black text-foreground mb-6 uppercase tracking-widest">What you&apos;ll learn</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {course?.learning_objectives?.map((obj: any, i: number) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <CheckCircle2 size={18} className="text-[#2694C6] shrink-0 mt-0.5" />
+                    <span className="text-sm font-medium text-muted-foreground leading-relaxed">
+                      {/* FIX: Access the name property if obj is an object */}
+                      {typeof obj === 'object' ? obj.name : obj}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-            <LearningObjectives objectives={course.learning_objectives} />
-            <CourseDescription description={course.long_description} />
-            <CourseModulesClient modules={course.modules} />
+            <div className="w-full overflow-hidden">
+              <CourseModulesClient modules={course?.modules || []} />
+            </div>
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-black text-foreground uppercase tracking-widest border-b border-border pb-4">
+                Description
+              </h2>
+
+              <div className="relative">
+                <div
+                  className={cn(
+                    "prose prose-sm max-w-none text-muted-foreground font-medium leading-relaxed transition-all duration-500 ease-in-out",
+                    !isExpanded && isLongDescription ? "max-h-60 overflow-hidden" : "max-h-[2000px]"
+                  )}
+                >
+                  <ReactMarkdown>
+                    {course?.long_description || "No description provided."}
+                  </ReactMarkdown>
+                </div>
+
+                {!isExpanded && isLongDescription && (
+                  <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
+                )}
+              </div>
+
+              {isLongDescription && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="flex items-center gap-2 text-[#2694C6] font-black uppercase text-[11px] tracking-widest hover:text-[#1e7ca8] transition-colors group"
+                >
+                  {isExpanded ? (
+                    <>
+                      Show Less 
+                      <ChevronUp size={14} className="group-hover:-translate-y-0.5 transition-transform" />
+                    </>
+                  ) : (
+                    <>
+                      Read More 
+                      <ChevronDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-8 pt-6">
+              <h2 className="text-xl font-black text-foreground uppercase tracking-widest border-b border-border pb-4">
+                Instructor
+              </h2>
+
+              <div className="space-y-5">
+                <div className="flex items-end gap-4">
+                  <div
+                    onClick={handleOpenTutorProfile}
+                    className="h-16 w-16 md:h-20 md:w-20 rounded-md bg-muted border border-border flex items-center justify-center font-black text-xl text-[#2694C6] cursor-pointer overflow-hidden shrink-0"
+                  >
+                    {(tutorProfile?.profile_image || course?.instructor?.profile_image) ? (
+                      <img 
+                        src={tutorProfile?.profile_image || course?.instructor?.profile_image} 
+                        className="w-full h-full object-cover" 
+                        alt="" 
+                      />
+                    ) : (
+                      <span className="text-2xl">
+                        {(tutorProfile?.display_name || course?.instructor?.creator_name || course?.instructor?.display_name || "U")[0]}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 pb-1">
+                    <h4
+                      onClick={handleOpenTutorProfile}
+                      className="font-black text-[#2694C6] text-lg hover:underline cursor-pointer leading-tight mb-1"
+                    >
+                      {tutorProfile?.display_name || course?.instructor?.creator_name || course?.instructor?.display_name || course?.instructor?.instructor_name || "Unknown Instructor"}
+                    </h4>
+                    <p className="text-xs text-muted-foreground font-bold">
+                      Curriculum Lead & Industry Expert
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <div className={cn(
+                    "text-sm text-muted-foreground font-medium leading-relaxed transition-all duration-300",
+                    !isBioExpanded ? "line-clamp-3" : "line-clamp-none"
+                  )}>
+                    {tutorProfile?.bio || course?.instructor?.bio || "Professional instructor focused on practical, job-ready skills."}
+                  </div>
+
+                  {!isBioExpanded && (course?.instructor?.bio?.length > 150 || tutorProfile?.bio?.length > 150) && (
+                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
+                  )}
+                </div>
+
+                {(course?.instructor?.bio?.length > 150 || tutorProfile?.bio?.length > 150) && (
+                  <button
+                    onClick={() => setIsBioExpanded(!isBioExpanded)}
+                    className="flex items-center gap-2 text-[#2694C6] font-black uppercase text-[10px] tracking-widest hover:text-[#1e7ca8] transition-colors"
+                  >
+                    {isBioExpanded ? (
+                      <>Show Less <ChevronUp size={14} /></>
+                    ) : (
+                      <>Read More <ChevronDown size={14} /></>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+
+      <Dialog open={isTutorModalOpen} onOpenChange={setIsTutorModalOpen}>
+        <DialogContent className="w-[95%] sm:max-w-[550px] lg:max-w-[650px] p-0 gap-0 h-[85vh] md:h-[80vh] flex flex-col border-border/80 shadow-2xl rounded-md bg-background overflow-hidden [&>button]:hidden transition-all duration-300 top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%]">
+          
+          <DialogHeader className="px-5 py-4 border-b bg-muted/50 flex flex-row items-center justify-between shrink-0 backdrop-blur-sm z-10">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-md border border-primary/20 shrink-0">
+                <UserCheck2 className="w-5 h-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle className="text-sm md:text-base font-bold tracking-tight text-foreground uppercase truncate">
+                  Instructor Profile
+                </DialogTitle>
+                <p className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.15em]">Verified Professional</p>
+              </div>
+            </div>
+            <DialogClose className="rounded-md p-2 hover:bg-muted transition -mr-2" onClick={() => setIsTutorModalOpen(false)}>
+              <X className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+            </DialogClose>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-5 md:px-8 py-6 space-y-8 custom-scrollbar">
+            {loadingTutor ? (
+              <div className="space-y-10 animate-pulse">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-5 rounded-md border border-border bg-muted/10">
+                  <div className="h-24 w-24 rounded-md bg-muted shrink-0" />
+                  <div className="flex-1 space-y-3 w-full">
+                    <div className="h-6 bg-muted w-3/4 mx-auto sm:mx-0 rounded" />
+                    <div className="h-3 bg-muted w-1/2 mx-auto sm:mx-0 rounded" />
+                  </div>
+                </div>
+              </div>
+            ) : tutorProfile ? (
+              <>
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-5 rounded-md border border-border bg-muted/10">
+                  <div className="h-24 w-24 rounded-md border-2 border-background shadow-sm overflow-hidden shrink-0 bg-muted flex items-center justify-center">
+                    {tutorProfile.profile_image ? (
+                      <img src={tutorProfile.profile_image} className="w-full h-full object-cover" alt={tutorProfile.display_name} />
+                    ) : (
+                      <span className="text-3xl font-black text-primary">{tutorProfile.display_name?.[0]}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 text-center sm:text-left space-y-2">
+                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                      <h3 className="text-xl font-black tracking-tight text-foreground truncate">{tutorProfile.display_name}</h3>
+                      {tutorProfile.is_verified && <Verified size={18} className="text-primary shrink-0" />}
+                    </div>
+                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.1em] leading-tight">
+                      {tutorProfile.headline}
+                    </p>
+                    
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-2">
+                      <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase">
+                        <Users size={14} className="text-primary" /> 
+                        {tutorProfile.total_students?.toLocaleString()} Students
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase">
+                        <Award size={14} className="text-primary" /> 
+                        {tutorProfile.average_rating} Rating
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted text-[9px]">01</span>
+                    Professional Biography
+                  </h4>
+                  <div className="prose prose-sm max-w-none text-foreground/80 leading-relaxed font-medium text-sm border-l-2 border-muted pl-4">
+                    <ReactMarkdown>{tutorProfile.bio}</ReactMarkdown>
+                  </div>
+                </div>
+
+                {tutorProfile.subjects?.length > 0 && (
+                  <div className="space-y-4 pt-2">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted text-[9px]">02</span>
+                      Areas of Expertise
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {tutorProfile.subjects.map((sub: any, index: number) => (
+                        <Badge 
+                          key={sub.id || `sub-${index}`} 
+                          variant="secondary" 
+                          className="rounded-sm bg-muted/50 border border-border/50 font-bold text-[9px] uppercase px-2.5 py-1 shadow-none text-foreground hover:bg-primary/10 hover:border-primary/30 transition-colors"
+                        >
+                          {sub.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center py-20">
+                <InboxIcon className="h-10 w-10 text-muted-foreground/20 mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Profile details unavailable</p>
+              </div>
+            )}
+          </div>
+
+          <div className="px-5 py-4 border-t bg-muted/20 flex justify-end shrink-0">
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsTutorModalOpen(false)} 
+              className="h-10 px-6 rounded-md font-black text-[10px] text-black uppercase tracking-widest shadow-none bg-muted hover:bg-muted/80 active:scale-[0.98] transition-all"
+            >
+              Close Profile
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// INTEGRATED SKELETON LOADER
+const CourseDetailSkeleton = () => (
+  <SkeletonTheme baseColor="#f3f4f6" highlightColor="#ffffff">
+    <div className="min-h-screen bg-white">
+      <div className="bg-[#1C1D1F] py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="lg:w-2/3 space-y-6">
+            <Skeleton width={120} height={20} />
+            <Skeleton height={60} width="85%" />
+            <Skeleton height={30} width="70%" />
+            <div className="flex gap-8 pt-4">
+              <Skeleton width={120} height={45} />
+              <Skeleton width={120} height={45} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8 lg:gap-12">
+          <aside className="order-1 lg:order-2 lg:col-span-1 mt-6 lg:-mt-64 z-10">
+            <div className="border-2 border-border rounded-md bg-white overflow-hidden">
+               <Skeleton height={200} />
+               <div className="p-6 space-y-6">
+                  <Skeleton height={40} width="60%" />
+                  <Skeleton height={50} width="100%" />
+               </div>
+            </div>
+          </aside>
+
+          <main className="order-2 lg:order-1 lg:col-span-2 py-10 space-y-12">
+            <Skeleton height={100} borderRadius={4} />
+            <Skeleton height={200} borderRadius={4} />
+            <div className="space-y-4">
+              <Skeleton width={200} height={30} />
+              <Skeleton count={4} height={50} borderRadius={0} />
+            </div>
+            <div className="space-y-4">
+              <Skeleton width={200} height={30} />
+              <Skeleton height={250} />
+            </div>
           </main>
         </div>
       </div>
     </div>
-  );
-}
+  </SkeletonTheme>
+);
