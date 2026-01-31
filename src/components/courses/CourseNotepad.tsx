@@ -134,7 +134,7 @@ export default function CourseNotepad({ courseSlug }: CourseNotepadProps) {
     const performSave = async (htmlContent: string) => {
       setIsSaving(true);
       try {
-        await api.patch(`/courses/notes/${courseSlug}/`, { content: htmlContent });
+        await api.patch(`/course-notes/${courseSlug}/`, { content: htmlContent });
         setLastSaved(new Date());
       } catch (error) {
         console.error("Failed to save notes", error);
@@ -177,7 +177,7 @@ export default function CourseNotepad({ courseSlug }: CourseNotepadProps) {
       if (!editor) return;
       setIsLoading(true);
       try {
-        const res = await api.get(`/courses/notes/${courseSlug}/`);
+        const res = await api.get(`/course-notes/${courseSlug}/`);
         const content = res.data.content || "";
         if (editor.isEmpty) {
           editor.commands.setContent(content);

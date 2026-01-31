@@ -1,16 +1,24 @@
-// components/courses/TabContent.tsx
-
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import { TabType } from "./CourseContentTabs";
 import { cn } from "@/lib/utils";
 import CourseAnnouncementsList from "./CourseAnnouncementsList";
 import CourseNotepad from "./CourseNotepad";
 import CourseQnA from "./CourseQnA";
+import ReactMarkdown from "react-markdown"; 
+import { Download, ExternalLink, BookOpen, CheckCircle2, FileText, Link as LinkIcon, ArrowRight } from "lucide-react";
 
-// --- Interface Definitions ---
+interface Resource {
+    id: number;
+    title: string;
+    description: string;
+    resource_type: 'file' | 'link' | 'book_ref';
+    file: string | null;
+    external_url: string | null;
+    reading_instructions: string;
+}
+
 interface Quiz { 
     id: number; 
     title: string; 
@@ -19,54 +27,21 @@ interface Quiz {
     questions_count: number; 
     latest_attempt: any; 
     max_score: number; 
-    time_limit_minutes: number | null; 
-}
-
-interface CourseAssignment { 
-    id: number; 
-    title: string; 
-    description: string; 
-    due_date: string | null; 
-    max_score: number; 
-    latest_submission: any; 
 }
 
 interface Lesson { 
     id: number; 
     title: string; 
     content: string; 
-    resources: any; 
+    resources: Resource[]; 
     is_completed: boolean; 
     quizzes: Quiz[]; 
 }
 
-interface LiveLesson { 
-    id: number; 
-    title: string; 
-    description?: string; 
-}
-
 interface Course { 
-    long_description?: string; 
-    learning_objectives?: string[]; 
+    long_description: string; 
+    learning_objectives: string[]; 
 }
-
-const CustomListIcon = () => (
-  <div className="mt-0.5 mr-3 flex-shrink-0 text-primary">
-    <svg 
-      width="20" 
-      height="20" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  </div>
-);
 
 export type ActiveContent = { 
     type: 'lesson' | 'quiz' | 'assignment' | 'live'; 
@@ -78,61 +53,95 @@ interface TabContentProps {
     courseSlug: string;
     course: Course | null;
     activeContent: ActiveContent | null; 
+    allContent: ActiveContent[]; 
     onToggleComplete: (lessonId: number) => void;
-    joinLiveSession: () => void;
-    setJoiningLive: React.Dispatch<React.SetStateAction<boolean>>;
-    // 🚨 Added setActiveContent to props definition
     setActiveContent: (content: ActiveContent) => void; 
+    joinLiveSession?: () => void;
+    setJoiningLive?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-// -----------------------------------------------------------------
-// 🔹 Shared Lesson Content Container (UPDATED)
-// -----------------------------------------------------------------
 const LessonContentContainer: React.FC<{ 
     lesson: Lesson, 
+    allContent: ActiveContent[],
     onToggleComplete: (id: number) => void, 
-    router: any,
     setActiveContent: (content: ActiveContent) => void 
-}> = ({ lesson, onToggleComplete, router, setActiveContent }) => {
+}> = ({ lesson, allContent, onToggleComplete, setActiveContent }) => {
     
-    const quiz = lesson.quizzes?.[0];
+    const getRecommendation = () => {
+        if (!allContent || allContent.length === 0) return null;
+
+        const lessonQuiz = lesson.quizzes?.[0];
+        const quizDone = lessonQuiz?.latest_attempt?.is_completed;
+
+        if (lessonQuiz && !quizDone) {
+            return { type: 'quiz' as const, data: lessonQuiz, label: "Lesson Quiz" };
+        }
+
+        const currentIndex = allContent.findIndex(c => c.type === 'lesson' && c.data.id === lesson.id);
+        
+        if (currentIndex === -1) return null;
+
+        const nextIncomplete = allContent.slice(currentIndex + 1).find(item => {
+            if (item.type === 'lesson') return !item.data.is_completed;
+            if (item.type === 'quiz') return !item.data.latest_attempt?.is_completed;
+            if (item.type === 'assignment') return !item.data.latest_submission;
+            return false;
+        });
+
+        if (nextIncomplete) {
+            return { 
+                type: nextIncomplete.type, 
+                data: nextIncomplete.data, 
+                label: `Next ${nextIncomplete.type.charAt(0).toUpperCase() + nextIncomplete.type.slice(1)}`
+            };
+        }
+
+        return null;
+    };
+
+    const nextAction = getRecommendation();
 
     return (
-        <div className="space-y-8 max-w-4xl">
+        <div className="space-y-8 max-w-4xl animate-in fade-in duration-500">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-border/50">
-                <h3 className="text-2xl font-bold tracking-tight text-foreground">
+                <h3 className="text-3xl font-extrabold tracking-tight text-foreground leading-tight">
                     {lesson.title}
                 </h3>
                 <button 
                     onClick={() => onToggleComplete(lesson.id)}
                     className={cn(
-                        'px-4 py-2 rounded-lg text-sm font-medium transition-colors border',
+                        'px-5 py-2 rounded-full text-sm font-bold transition-all border flex items-center gap-2 shadow-sm shrink-0',
                         lesson.is_completed 
-                            ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
-                            : 'bg-background border-border text-muted-foreground hover:text-foreground hover:border-primary/50'
+                            ? 'bg-green-500 border-green-600 text-white hover:bg-green-600'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-primary hover:text-primary'
                     )}
                 >
-                    {lesson.is_completed ? '✔ Completed' : 'Mark as Complete'}
+                    {lesson.is_completed ? <CheckCircle2 className="w-4 h-4" /> : null}
+                    {lesson.is_completed ? 'Completed' : 'Mark as Complete'}
                 </button>
             </div>
             
-            <div className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                {lesson.content || "No description for this lesson."}
+            <div className="prose prose-slate prose-blue max-w-none dark:prose-invert leading-relaxed text-sm">
+                <ReactMarkdown>{lesson.content || "_No descriptive content provided for this lesson._"}</ReactMarkdown>
             </div>
             
-            {quiz && (
-                <div className="mt-8 p-6 rounded-xl border border-secondary/20 bg-secondary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <div className="space-y-1">
-                        <h4 className="text-lg font-semibold text-foreground">Assessment: {quiz.title}</h4>
+            {nextAction && (
+                <div className="mt-12 p-8 rounded-2xl border-2 border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-inner animate-in slide-in-from-bottom-4 duration-700">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary uppercase tracking-wider">
+                            {lesson.is_completed ? "Keep Going" : "Recommended Next Step"}
+                        </div>
+                        <h4 className="text-xl font-bold text-foreground">{nextAction.label}: {nextAction.data.title}</h4>
                         <p className="text-sm text-muted-foreground">
-                            Questions: {quiz.questions_count} | Attempts: {quiz.max_attempts}
+                            {nextAction.type === 'quiz' ? `Verify your knowledge with ${nextAction.data.questions_count} questions.` : "Continue your learning journey with the next module item."}
                         </p>
                     </div>
                     <button 
-                        onClick={() => setActiveContent({ type: 'quiz', data: quiz })} 
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                        onClick={() => setActiveContent({ type: nextAction.type, data: nextAction.data })} 
+                        className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-bold transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2"
                     >
-                        Start Quiz
+                        {nextAction.type === 'lesson' ? <ArrowRight className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                        {lesson.is_completed ? "Go to Next Item" : "Start Now"}
                     </button>
                 </div>
             )}
@@ -140,186 +149,151 @@ const LessonContentContainer: React.FC<{
     );
 };
 
-// -----------------------------------------------------------------
-// 🔹 Lesson Resources Tab
-// -----------------------------------------------------------------
 const LessonResourcesTab: React.FC<{ lesson: Lesson }> = ({ lesson }) => {
-    const resources = lesson.resources;
-    const hasResources = resources && (resources.links?.length || resources.files?.length);
+    const resources = lesson.resources || [];
 
-    if (!hasResources) {
-        return <p className="text-muted-foreground">No supplementary files or links available for this lesson.</p>;
+    if (resources.length === 0) {
+        return (
+            <div className="py-16 text-center border-2 border-dashed border-border rounded-2xl bg-gray-50/50">
+                <p className="text-muted-foreground font-medium">No supplementary files or links for this lesson.</p>
+            </div>
+        );
     }
 
     return (
-        <div className="mt-4 space-y-6">
-            <h4 className="text-2xl font-bold text-foreground mb-4">Lesson Resources</h4>
-            {resources.links?.length > 0 && (
-                <div className="border-b pb-4">
-                    <h5 className="text-xl font-semibold mb-2 text-foreground">External Links</h5>
-                    <ul className="list-disc list-inside space-y-2 text-primary">
-                        {resources.links.map((link: string, index: number) => (
-                            <li key={`link-${index}`} className="flex items-center">
-                                <a 
-                                    href={link} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="hover:underline text-sm truncate"
-                                >
-                                    {link}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-            
-            {resources.files?.length > 0 && (
-                <div>
-                    <h5 className="text-xl font-semibold mb-2 text-foreground">Downloadable Files</h5>
-                    <ul className="list-disc list-inside space-y-2 text-primary">
-                        {resources.files.map((file: string, index: number) => (
-                            <li key={`file-${index}`} className="flex items-center">
-                                <a 
-                                    href={file} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="hover:underline text-sm truncate"
-                                >
-                                    Download Resource File
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+        <div className="mt-4 space-y-8">
+            <div>
+                <h4 className="text-2xl font-black tracking-tight text-gray-900">Learning Materials</h4>
+                <p className="text-sm text-muted-foreground mt-1">Downloadable files and external references for this session.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {resources.map((res) => {
+                    const isBook = res.resource_type === 'book_ref';
+                    const isLink = res.resource_type === 'link';
+
+                    return (
+                        <div key={res.id} className="flex flex-col p-5 bg-white border border-gray-200 rounded-2xl hover:shadow-xl hover:border-primary/40 transition-all group relative overflow-hidden">
+                            <div className="flex items-start gap-4 mb-4">
+                                <div className={cn(
+                                    "p-3 rounded-xl shrink-0 transition-colors",
+                                    isLink ? "bg-blue-50 text-blue-600" : isBook ? "bg-orange-50 text-orange-600" : "bg-primary/10 text-primary"
+                                )}>
+                                    {isLink ? <LinkIcon size={22} /> : isBook ? <BookOpen size={22} /> : <Download size={22} />}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-bold text-gray-900 truncate text-base leading-snug">{res.title}</p>
+                                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-1">{res.description || "Referenced material."}</p>
+                                </div>
+                            </div>
+                            
+                            {res.reading_instructions && (
+                                <div className="mb-5 text-[11px] bg-gray-50 p-3 rounded-lg italic text-gray-600 border-l-4 border-primary/20 leading-relaxed">
+                                    &ldquo;{res.reading_instructions}&rdquo;
+                                </div>
+                            )}
+
+                            <a 
+                                href={res.external_url || res.file || "#"} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="mt-auto w-full text-center py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.12em] bg-gray-900 text-white hover:bg-primary transition-all shadow-sm"
+                            >
+                                {isLink ? "Open Link" : isBook ? "Access Book" : "Download File"}
+                            </a>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 };
 
-
-// -----------------------------------------------------------------
-// 🔹 Course Overview Tab
-// -----------------------------------------------------------------
-const CourseOverviewTab: React.FC<{ course: any }> = ({ course }) => (
-  <div className="space-y-8 max-w-4xl">
-    <div>
-      <h3 className="text-xl font-bold tracking-tight mb-4 text-foreground">
-        Course Overview
-      </h3>
-      <div className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
-        {course?.long_description || "No full course description provided."}
-      </div>
-    </div>
-
-    {course?.learning_objectives && course.learning_objectives.length > 0 && (
-      <div className="bg-card/50 border border-border/50 rounded-xl p-6">
-        <h4 className="text-lg font-semibold mb-4 text-foreground">
-          What you'll learn
-        </h4>
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-          {course.learning_objectives.map((obj: string, index: number) => (
-            <li key={index} className="flex items-start text-sm text-muted-foreground">
-              <CustomListIcon />
-              <span className="leading-snug">{obj}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
-  </div>
-);
-
-
-// -----------------------------------------------------------------
-// 🔹 Main TabContent Component
-// -----------------------------------------------------------------
 const TabContent = ({ 
     activeTab, 
     course, 
     activeContent, 
+    allContent = [],
     courseSlug, 
     onToggleComplete, 
-    setActiveContent // 🚨 Destructured here
+    setActiveContent,
+    joinLiveSession,
+    setJoiningLive
 }: TabContentProps) => {
-    const router = useRouter();
-
     if (!course) return null;
-
-    // Handle default view (Overview) if no specific content is selected and not on a special tab
-    if (!activeContent && activeTab !== 'Announcements' && activeTab !== 'Notes' && activeTab !== 'Q&A') {
-        return <div className="p-4 md:p-8 bg-card border border-border shadow-sm"><CourseOverviewTab course={course} /></div>;
-    }
 
     const { type, data } = activeContent || {};
 
-    // --- Tab Rendering Logic ---
     const content = (() => {
-        
         switch (activeTab) {
             case 'Overview':
-                return <CourseOverviewTab course={course} />;
+                return (
+                    <div className="space-y-10 max-w-4xl animate-in fade-in duration-500">
+                        <div>
+                            <h3 className="text-2xl font-bold tracking-tight mb-6 text-foreground border-b border-gray-100 pb-2">
+                                About this Course
+                            </h3>
+                            <div className="prose prose-slate max-w-none text-muted-foreground leading-relaxed text-sm">
+                                <ReactMarkdown>{course.long_description || "_No full course description provided._"}</ReactMarkdown>
+                            </div>
+                        </div>
+
+                        {course.learning_objectives && course.learning_objectives.length > 0 && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-3xl p-8">
+                                <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-8">
+                                    Course Learning Objectives
+                                </h4>
+                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5">
+                                    {course.learning_objectives.map((obj: string, index: number) => (
+                                        <li key={index} className="flex items-start text-sm text-gray-700 font-bold leading-snug">
+                                            <div className="h-6 w-6 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 mr-3 mt-[-2px]">
+                                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                            </div>
+                                            {obj}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                );
 
             case 'Content':
-                if (type === 'assignment' || type === 'quiz') {
-                     return null; // Handled by a different view wrapper or component
-                }
-
                 if (type === 'lesson') {
                     return (
                         <LessonContentContainer 
                             lesson={data as Lesson} 
+                            allContent={allContent}
                             onToggleComplete={onToggleComplete} 
-                            router={router}
-                            setActiveContent={setActiveContent} // 🚨 Passed down here
+                            setActiveContent={setActiveContent} 
                         />
                     );
                 } 
-                if (type === 'live') {
-                    const liveLesson = data as LiveLesson;
-                    return (
-                        <div className="space-y-4">
-                            <h4 className="text-2xl font-bold text-foreground">Session Details</h4>
-                            <p className="text-muted-foreground">{liveLesson.description || "No specific description for this session."}</p>
-                        </div>
-                    );
-                }
-                return <p className="text-muted-foreground">Content details not available.</p>;
+                return <div className="py-20 text-center text-muted-foreground italic font-medium">Select a lesson to view detailed content.</div>;
             
             case "Resources":
                 if (type === 'lesson') {
                     return <LessonResourcesTab lesson={data as Lesson} />;
                 }
-                return <p className="text-muted-foreground">Resources are only available for lessons.</p>;
+                return <div className="py-20 text-center text-muted-foreground italic font-medium">Resources are contextual to the active lesson.</div>;
             
             case "Q&A":
                 return <CourseQnA courseSlug={courseSlug} />;
             
             case "Notes": 
-                return (
-                    <div className="h-full">
-                        <CourseNotepad courseSlug={courseSlug} />
-                    </div>
-                );
+                return <CourseNotepad courseSlug={courseSlug} />;
             
             case "Announcements":
-                if (courseSlug) {
-                    return <CourseAnnouncementsList courseSlug={courseSlug} />;
-                }
-                return <p className="text-muted-foreground">Course identifier is missing.</p>;
+                return <CourseAnnouncementsList courseSlug={courseSlug} />;
             
             default:
-                return (<p className="text-muted-foreground">Content not available for this tab/item combination.</p>);
+                return null;
         }
     })();
 
-    // Conditionally render the outer container 
-    if (content === null) {
-        return null;
-    }
+    if (content === null) return null;
 
     return (
-        <div className="p-4 md:p-8 bg-card border border-border border-t-0">
+        <div className="p-6 md:p-10 bg-white border border-gray-200 border-t-0 rounded-b-2xl shadow-sm min-h-[450px]">
             {content}
         </div>
     );

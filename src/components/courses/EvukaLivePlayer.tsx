@@ -40,6 +40,12 @@ interface JoinResponse {
   resources: Resource[];
 }
 
+interface EvukaLivePlayerProps {
+  playbackUrl?: string | null; // For HLS fallback if needed
+  onExit: () => void;
+  lessonId?: string | number; // Passing ID directly is more reliable than useParams
+}
+
 function Modal({ title, isOpen, onClose, children }: { title: string, isOpen: boolean, onClose: () => void, children: React.ReactNode }) {
   if (!isOpen) return null;
   return (
@@ -59,10 +65,10 @@ function Modal({ title, isOpen, onClose, children }: { title: string, isOpen: bo
   );
 }
 
-export default function StudentLiveClassroom() {
+export default function EvukaLivePlayer({ playbackUrl, onExit, lessonId: propLessonId }: EvukaLivePlayerProps) {
   const router = useRouter();
   const params = useParams();
-  const lessonId = params?.lessonId as string;
+  const lessonId = propLessonId || (params?.lessonId as string);
   const { activeSlug } = useActiveOrg();
   
   const [token, setToken] = useState("");
@@ -118,34 +124,33 @@ export default function StudentLiveClassroom() {
   }, []);
 
   const handleDisconnect = () => {
-    const basePath = activeSlug ? `/${activeSlug}` : '';
-    router.push(`${basePath}/dashboard`);
+    onExit(); // Use the provided onExit to close the player overlay
   };
 
   if (isLoading) {
     return (
-      <div className="h-screen w-full bg-zinc-950 flex flex-col items-center justify-center text-white space-y-4">
+      <div className="h-full w-full bg-zinc-950 flex flex-col items-center justify-center text-white space-y-4 rounded-md min-h-[400px]">
         <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-        <p className="text-zinc-400 animate-pulse text-sm">Connecting to classroom...</p>
+        <p className="text-zinc-400 animate-pulse text-xs font-black uppercase tracking-widest">Connecting to Classroom</p>
       </div>
     );
   }
 
   if (waitInfo) {
     return (
-      <div className="h-screen w-full bg-zinc-950 flex flex-col items-center justify-center text-white p-6 text-center">
+      <div className="h-full w-full bg-zinc-950 flex flex-col items-center justify-center text-white p-6 text-center rounded-md min-h-[400px]">
         <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-md max-w-md w-full shadow-2xl">
           <Clock className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Class Not Started</h2>
-          <p className="text-zinc-400 mb-6">{waitInfo.message}</p>
-          <div className="bg-blue-900/20 text-blue-400 py-2 px-4 rounded-md text-sm inline-block">
+          <h2 className="text-xl font-bold mb-2 uppercase tracking-tight">Class Not Started</h2>
+          <p className="text-zinc-400 text-sm mb-6">{waitInfo.message}</p>
+          <div className="bg-blue-900/20 text-blue-400 py-2 px-4 rounded-md text-xs font-bold inline-block uppercase tracking-widest">
             Opens at {waitInfo.openAt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
           </div>
-          <button onClick={() => window.location.reload()} className="mt-8 w-full bg-zinc-800 hover:bg-zinc-700 py-3 rounded-md font-medium transition-colors">
+          <button onClick={() => window.location.reload()} className="mt-8 w-full bg-zinc-800 hover:bg-zinc-700 py-3 rounded-md text-xs font-black uppercase tracking-widest transition-colors">
             Refresh Status
           </button>
-          <button onClick={handleDisconnect} className="mt-4 w-full text-zinc-500 hover:text-zinc-300 text-sm py-2">
-            Return to Dashboard
+          <button onClick={handleDisconnect} className="mt-4 w-full text-zinc-500 hover:text-zinc-300 text-[10px] font-black uppercase tracking-widest">
+            Cancel and Return
           </button>
         </div>
       </div>
@@ -156,15 +161,8 @@ export default function StudentLiveClassroom() {
 
   return (
     <div 
-      className="relative bg-zinc-950 overflow-hidden"
+      className="relative bg-zinc-950 overflow-hidden rounded-md h-[70vh] min-h-[500px]"
       data-lk-theme="default"
-      style={
-        isMobilePortrait ? {
-          width: "100vh", height: "100vw", transform: "rotate(90deg)",
-          transformOrigin: "bottom left", position: "absolute",
-          top: "-100vw", left: "0", zIndex: 50,
-        } : { width: "100%", height: "100vh" }
-      }
     >
       <LiveKitRoom
         video={true}
@@ -176,20 +174,11 @@ export default function StudentLiveClassroom() {
         className="h-full w-full"
       >
         <StudentClassroomWrapper 
-          lessonId={lessonId}
+          lessonId={lessonId.toString()}
           initialEndTime={effectiveEndTime}
           initialResources={resources}
           hostIdentity={hostIdentity}
         />
-        
-        {isMobilePortrait && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 px-3 py-1 rounded-full z-[100] animate-pulse pointer-events-none">
-            <div className="flex items-center gap-2 text-white text-xs font-bold">
-              <RotateCcw className="h-3 w-3" />
-              <span>Rotate device</span>
-            </div>
-          </div>
-        )}
       </LiveKitRoom>
     </div>
   );
@@ -230,7 +219,7 @@ function StudentClassroomWrapper(props: StudentClassroomProps) {
               <h2 className="text-2xl font-bold mb-2">Waiting for Tutor</h2>
               <p className="text-zinc-400 mb-6">
                 The class session is active, but the tutor hasn't joined the room yet. 
-                Sit tight, they should be here shortly!
+                Sit tight!
               </p>
               <div className="flex justify-center gap-2">
                  <span className="h-2 w-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
@@ -331,7 +320,7 @@ function StudentRoomManager({ initialEndTime, initialResources, isWaitingForHost
     const msg = JSON.stringify({ type: 'RAISE_HAND' });
     const encoder = new TextEncoder();
     await localParticipant.publishData(encoder.encode(msg), { reliable: true });
-    toast.success("Hand raised! The tutor has been notified.");
+    toast.success("Hand raised!");
   };
 
   const areControlsVisible = !isResourceModalOpen && !isWaitingForHost;
@@ -340,20 +329,20 @@ function StudentRoomManager({ initialEndTime, initialResources, isWaitingForHost
     <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
       
       <div className="absolute top-4 left-4 z-20 pointer-events-auto bg-black/60 backdrop-blur-md rounded-md p-2 text-white flex items-center gap-4 border border-white/10">
-        <div className={`flex items-center gap-2 font-mono ${timeLeft === 'Class Ended' ? 'text-red-500' : 'text-green-400'}`}>
-          <Clock className="h-4 w-4" />
+        <div className={`flex items-center gap-2 font-mono text-xs ${timeLeft === 'Class Ended' ? 'text-red-500' : 'text-green-400'}`}>
+          <Clock className="h-3 w-3" />
           <span className="font-bold">{timeLeft}</span>
         </div>
         
         {!isWaitingForHost && (
-            <div className="flex gap-2 text-xs">
+            <div className="flex gap-2 text-[10px] uppercase font-black tracking-widest">
                 {isMicLocked && (
-                    <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-md flex items-center gap-1 border border-red-500/20">
+                    <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded flex items-center gap-1 border border-red-500/20">
                         <Lock className="h-3 w-3"/> Mic Locked
                     </span>
                 )}
                 {isCameraLocked && (
-                    <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-md flex items-center gap-1 border border-red-500/20">
+                    <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded flex items-center gap-1 border border-red-500/20">
                         <Lock className="h-3 w-3"/> Cam Locked
                     </span>
                 )}
@@ -366,7 +355,6 @@ function StudentRoomManager({ initialEndTime, initialResources, isWaitingForHost
            <button 
              onClick={raiseHand}
              className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-transform active:scale-95 flex items-center justify-center group"
-             title="Raise Hand"
            >
              <Hand className="h-6 w-6 group-hover:-translate-y-1 transition-transform" />
            </button>
@@ -374,13 +362,13 @@ function StudentRoomManager({ initialEndTime, initialResources, isWaitingForHost
       )}
 
       {initialResources.length > 0 && areControlsVisible && (
-         <div className="absolute top-20 left-4 z-20 pointer-events-auto">
+         <div className="absolute top-16 left-4 z-20 pointer-events-auto">
              <button 
                onClick={() => setIsResourceModalOpen(true)}
-               className="bg-zinc-900/90 border border-zinc-700 text-white px-4 py-2 rounded-md shadow-lg flex items-center gap-2 text-sm hover:bg-zinc-800 transition-colors"
+               className="bg-zinc-900/90 border border-zinc-700 text-white px-3 py-1.5 rounded-md shadow-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-colors"
              >
-                <FileText className="h-4 w-4" /> 
-                Class Resources ({initialResources.length})
+                <FileText className="h-3 w-3" /> 
+                Resources ({initialResources.length})
              </button>
          </div>
       )}
@@ -389,10 +377,10 @@ function StudentRoomManager({ initialEndTime, initialResources, isWaitingForHost
         <div className="absolute top-4 right-4 z-20 pointer-events-auto">
             <button 
                 onClick={() => room.disconnect()}
-                className="bg-red-500/10 hover:bg-red-600 text-red-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                className="bg-red-500/10 hover:bg-red-600 text-red-500 hover:text-white px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-2"
             >
-                <LogOut className="h-4 w-4" />
-                Leave Class
+                <LogOut className="h-3 w-3" />
+                Leave
             </button>
         </div>
       )}
@@ -406,8 +394,8 @@ function StudentRoomManager({ initialEndTime, initialResources, isWaitingForHost
             <ul className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
             {initialResources.map((res) => (
                 <li key={res.id} className="flex items-center justify-between bg-zinc-800/50 p-3 rounded-md border border-zinc-800 hover:border-zinc-700 transition-colors">
-                <a href={res.file} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-zinc-200 hover:text-blue-400 font-medium truncate w-full">
-                    <FileText className="h-4 w-4 shrink-0" />
+                <a href={res.file} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-xs text-zinc-200 hover:text-blue-400 font-bold uppercase tracking-tight truncate w-full">
+                    <FileText className="h-4 w-4 shrink-0 text-blue-500" />
                     {res.title}
                 </a>
                 </li>
