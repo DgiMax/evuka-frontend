@@ -93,6 +93,7 @@ const CourseSidebar = ({
   onToggleComplete,
 }: CourseSidebarProps) => {
   const [openSections, setOpenSections] = useState<{ [key: number]: boolean }>({ 0: true });
+  const [isPastLessonsOpen, setIsPastLessonsOpen] = useState(false);
 
   useEffect(() => {
     if (activeContent && course) {
@@ -110,15 +111,23 @@ const CourseSidebar = ({
       });
 
       if (activeModuleIndex !== -1) {
-        setOpenSections({ [activeModuleIndex]: true });
+        setOpenSections((prev) => ({ ...prev, [activeModuleIndex]: true }));
       }
     }
   }, [activeContent, course]);
 
   const toggleSection = (index: number) => {
-    setOpenSections({
-      [index]: !openSections[index],
-    });
+    setOpenSections((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
+  const handleItemClick = (type: ActiveContent["type"], item: any) => {
+    setActiveContent({ type, data: item });
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
   };
 
   const renderContentItem = (
@@ -154,10 +163,7 @@ const CourseSidebar = ({
     return (
       <li
         key={`${type}-${item.id || item.title}-${parentIndex}`}
-        onClick={() => {
-          setActiveContent({ type, data: item });
-          setIsSidebarOpen(false);
-        }}
+        onClick={() => handleItemClick(type, item)}
         className={cn(
           "flex items-center justify-between border-l-4 cursor-pointer transition-all pr-4 text-sm group overflow-hidden w-full select-none",
           isActive
@@ -165,10 +171,9 @@ const CourseSidebar = ({
             : "hover:bg-primary/5 border-transparent text-gray-600 hover:text-foreground"
         )}
       >
-        {/* 🟢 FIXED: Removed px-4 as requested to fix indentation */}
         <span className={cn("py-3.5 flex-1 flex items-center min-w-0", isNested ? "pl-10" : "pl-4")}>
           <IconComponent className={cn("mr-3 w-4 h-4 shrink-0 transition-transform group-hover:scale-110", iconColor)} />
-          <span className="truncate block w-full">{item.title}</span>
+          <span className="truncate block w-full tracking-tight">{item.title}</span>
         </span>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -212,11 +217,20 @@ const CourseSidebar = ({
     );
   }
 
+  const upcomingLiveLessons = course.live_classes.flatMap(lc => {
+    const lessons = [];
+    if (lc.active_lesson) lessons.push({ ...lc.active_lesson });
+    if (lc.upcoming_lessons) lessons.push(...lc.upcoming_lessons);
+    return lessons;
+  });
+
+  const pastLiveLessons = course.live_classes.flatMap(lc => lc.past_lessons || []);
+
   return (
     <aside
       className={cn(
-        "fixed top-0 right-0 h-dvh w-full bg-white border-l border-gray-200 flex flex-col z-[100] md:z-40 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none overflow-x-hidden",
-        "lg:w-80 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
+        "fixed top-0 right-0 h-dvh w-full bg-white border-l border-gray-200 flex flex-col z-[100] md:z-40 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none",
+        "lg:w-80 lg:static lg:h-full lg:translate-x-0",
         isSidebarOpen ? "translate-x-0" : "translate-x-full"
       )}
     >
@@ -227,9 +241,9 @@ const CourseSidebar = ({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-6 space-y-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-none [&::-webkit-scrollbar-thumb]:border-x-[1px] [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-content">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-none [&::-webkit-scrollbar-thumb]:border-x-[1px] [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-content">
         {course.modules.map((module, mIdx) => (
-          <div key={module.id || mIdx} className={cn("border-b border-gray-200 last:border-0", openSections[mIdx] ? "pb-4" : "pb-0")}>
+          <div key={module.id || mIdx} className={cn("border-b border-gray-200 last:border-0", openSections[mIdx] ? "pb-2" : "pb-0")}>
             <button
               onClick={() => toggleSection(mIdx)}
               className={cn(
@@ -259,21 +273,33 @@ const CourseSidebar = ({
           </div>
         ))}
 
-        {course.live_classes && course.live_classes.length > 0 && (
-          <div className="mt-4 pb-10">
+        {upcomingLiveLessons.length > 0 && (
+          <div className="mt-4">
             <div className="px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 bg-gray-50/50 border-y border-gray-100">
-              Live Sessions
+              Upcoming Sessions
             </div>
             <ul>
-              {course.live_classes.flatMap((lc) => {
-                  const items = [];
-                  if (lc.active_lesson) items.push(lc.active_lesson);
-                  if (lc.upcoming_lessons) items.push(...lc.upcoming_lessons);
-                  if (lc.past_lessons) items.push(...lc.past_lessons);
-                  
-                  return items.map((live) => renderContentItem(live, "live", "live-class", live.id));
-              })}
+              {upcomingLiveLessons.map((live) => renderContentItem(live, "live", "live-class", live.id))}
             </ul>
+          </div>
+        )}
+
+        {pastLiveLessons.length > 0 && (
+          <div className="mt-2 pb-10">
+            <button
+              onClick={() => setIsPastLessonsOpen(!isPastLessonsOpen)}
+              className="w-full px-5 py-3 flex justify-between items-center text-left transition-all bg-gray-50/30 border-y border-gray-100"
+            >
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                Past Sessions
+              </span>
+              <ChevronDown className={cn("w-3 h-3 text-gray-400 transition-transform", isPastLessonsOpen && "rotate-180")} />
+            </button>
+            {isPastLessonsOpen && (
+              <ul className="animate-in slide-in-from-top-1 duration-200">
+                {pastLiveLessons.map((live) => renderContentItem(live, "live", "live-class", live.id))}
+              </ul>
+            )}
           </div>
         )}
       </div>

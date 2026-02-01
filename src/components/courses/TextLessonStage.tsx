@@ -4,7 +4,8 @@ import React, { useRef, useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { BookOpen, CheckCircle2, Lock, Clock } from "lucide-react";
+import { BookOpen, CheckCircle2, Lock, Clock, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface TextLessonStageProps {
   title: string;
@@ -24,13 +25,17 @@ export default function TextLessonStage({
   const [isTimerComplete, setIsTimerComplete] = useState(false);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(30);
+  const [isContentLoading, setIsContentLoading] = useState(true);
 
   useEffect(() => {
+    setIsContentLoading(true);
+    const timeout = setTimeout(() => setIsContentLoading(false), 400);
+
     if (isCompleted) {
       setIsTimerComplete(true);
       setSecondsRemaining(0);
       setIsScrolledToBottom(true);
-      return;
+      return () => clearTimeout(timeout);
     }
 
     setIsTimerComplete(false);
@@ -48,7 +53,10 @@ export default function TextLessonStage({
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(timeout);
+    };
   }, [title, isCompleted]);
 
   useEffect(() => {
@@ -73,7 +81,7 @@ export default function TextLessonStage({
   const canMarkAsDone = isCompleted || (isTimerComplete && isScrolledToBottom);
 
   return (
-    <div className="w-full bg-black rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[75vh] animate-in fade-in duration-500">
+    <div className="w-full bg-black rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col h-[75vh] animate-in fade-in duration-500 relative">
       <div className="h-1 w-full bg-white/5 shrink-0">
         <div 
           className="h-full bg-primary transition-all duration-150 ease-out"
@@ -120,43 +128,66 @@ export default function TextLessonStage({
 
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-6 md:px-10 pt-6 pb-12 scroll-smooth
+        className="flex-1 overflow-y-auto px-6 md:px-10 pt-6 pb-12 scroll-smooth bg-black
         [&::-webkit-scrollbar]:w-1.5 
         [&::-webkit-scrollbar-thumb]:bg-white/10 
         hover:[&::-webkit-scrollbar-thumb]:bg-white/20"
       >
-        <div className="text-white/80 leading-relaxed selection:bg-primary/30">
-          <ReactMarkdown 
-            remarkPlugins={[remarkGfm]}
-            components={{
-              h1: ({...p}) => <h1 className="text-3xl font-black text-white mt-4 mb-6 tracking-tighter" {...p} />,
-              h2: ({...p}) => <h2 className="text-xl font-black text-white mt-8 mb-4 tracking-tight border-b border-white/10 pb-2" {...p} />,
-              h3: ({...p}) => <h3 className="text-lg font-bold text-white mt-6 mb-3" {...p} />,
-              p: ({...p}) => <p className="text-base leading-[1.7] mb-6 text-white/70" {...p} />,
-              ul: ({...p}) => <ul className="list-disc pl-5 mb-6 space-y-2 text-white/70" {...p} />,
-              ol: ({...p}) => <ol className="list-decimal pl-5 mb-6 space-y-2 text-white/70" {...p} />,
-              blockquote: ({...p}) => (
-                <blockquote className="border-l-4 border-primary bg-white/5 p-4 italic rounded-r-xl my-6 text-white/80" {...p} />
-              ),
-              code: ({node, inline, className, children, ...p}: any) => (
-                <code className={cn(
-                  "bg-white/10 text-primary px-1.5 py-0.5 rounded font-mono text-xs",
-                  !inline && "block p-4 bg-zinc-900 text-white/90 border border-white/5 overflow-x-auto my-6 rounded-lg"
-                )} {...p}>
-                  {children}
-                </code>
-              ),
-              a: ({...p}) => <a className="text-primary font-bold underline underline-offset-4" target="_blank" {...p} />,
-              img: ({...p}) => <img className="rounded-xl shadow-2xl mx-auto my-8 border border-white/10 max-h-[400px] object-contain" alt="" {...p} />,
-            }}
-          >
-            {content}
-          </ReactMarkdown>
+        <AnimatePresence mode="wait">
+          {isContentLoading ? (
+            <motion.div 
+              key="loader"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center bg-black z-10"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="w-6 h-6 animate-spin text-primary/50" />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Loading Content</p>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="text-white/80 leading-relaxed selection:bg-primary/30 min-h-full"
+            >
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({...p}) => <h1 className="text-3xl font-black text-white mt-4 mb-6 tracking-tighter" {...p} />,
+                  h2: ({...p}) => <h2 className="text-xl font-black text-white mt-8 mb-4 tracking-tight border-b border-white/10 pb-2" {...p} />,
+                  h3: ({...p}) => <h3 className="text-lg font-bold text-white mt-6 mb-3" {...p} />,
+                  p: ({...p}) => <p className="text-base leading-[1.7] mb-6 text-white/70" {...p} />,
+                  ul: ({...p}) => <ul className="list-disc pl-5 mb-6 space-y-2 text-white/70" {...p} />,
+                  ol: ({...p}) => <ol className="list-decimal pl-5 mb-6 space-y-2 text-white/70" {...p} />,
+                  blockquote: ({...p}) => (
+                    <blockquote className="border-l-4 border-primary bg-white/5 p-4 italic rounded-r-xl my-6 text-white/80" {...p} />
+                  ),
+                  code: ({node, inline, className, children, ...p}: any) => (
+                    <code className={cn(
+                      "bg-white/10 text-primary px-1.5 py-0.5 rounded font-mono text-xs",
+                      !inline && "block p-4 bg-zinc-900 text-white/90 border border-white/5 overflow-x-auto my-6 rounded-lg"
+                    )} {...p}>
+                      {children}
+                    </code>
+                  ),
+                  a: ({...p}) => <a className="text-primary font-bold underline underline-offset-4" target="_blank" rel="noopener noreferrer" {...p} />,
+                  img: ({...p}) => <img className="rounded-xl shadow-2xl mx-auto my-8 border border-white/10 max-h-[400px] object-contain" alt="" {...p} />,
+                }}
+              >
+                {content}
+              </ReactMarkdown>
 
-          <div className="mt-12 py-8 border-t border-white/5 flex flex-col items-center opacity-20">
-              <p className="text-[10px] font-black text-white uppercase tracking-[0.4em]">End of Content</p>
-          </div>
-        </div>
+              <div className="mt-12 py-8 border-t border-white/5 flex flex-col items-center opacity-20">
+                  <p className="text-[10px] font-black text-white uppercase tracking-[0.4em]">End of Content</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

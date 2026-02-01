@@ -9,7 +9,6 @@ import React, {
 import PlaybackRateControl from "./PlaybackRateControl";
 import { cn } from "@/lib/utils";
 
-// --- ICONS ---
 const Icon = {
     Play: ({ className = "w-6 h-6" }) => (
         <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -44,15 +43,17 @@ const Icon = {
                 d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 0h-4m4 0l-5-5" />
         </svg>
     ),
-    Spinner: ({ className = "w-10 h-10" }) => (
-        <svg className={`${className} animate-spin text-white`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
+    LoadingState: () => (
+        <div className="flex flex-col items-center gap-3 animate-in fade-in duration-300">
+            <div className="relative h-10 w-10 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-2 border-white/20" />
+                <div className="absolute inset-0 rounded-full border-t-2 border-white animate-spin" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/70">Buffering</p>
+        </div>
     )
 };
 
-// --- HELPERS ---
 const formatTime = (t: number) =>
     `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 
@@ -60,10 +61,10 @@ const ProgressBar = ({ progressRef, progress, onSeek }: any) => (
     <div
         ref={progressRef}
         onClick={onSeek}
-        className="w-full h-1 bg-gray-600/50 cursor-pointer rounded-full mb-2 relative group/progress"
+        className="w-full h-1 bg-white/20 cursor-pointer rounded-full mb-2 relative group/progress"
     >
         <div className="absolute inset-0 group-hover/progress:h-2 group-hover/progress:-top-0.5 transition-all"></div>
-        <div className="h-full bg-[#2694C6] rounded-full relative" style={{ width: `${progress}%` }}>
+        <div className="h-full bg-[#2694C6] rounded-full relative transition-all" style={{ width: `${progress}%` }}>
             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#2694C6] rounded-full scale-0 group-hover/progress:scale-100 transition-transform shadow-md" />
         </div>
     </div>
@@ -81,7 +82,7 @@ const VolumeControl = ({ volume, isMuted, onVolumeChange, onToggleMute }: any) =
             step="0.01"
             value={volume}
             onChange={onVolumeChange}
-            className="w-0 group-hover:w-24 h-1 ml-2 transition-all duration-300 opacity-0 group-hover:opacity-100 accent-white cursor-pointer"
+            className="w-0 group-hover:w-24 h-1 ml-2 transition-all duration-300 opacity-0 group-hover:opacity-100 accent-[#2694C6] cursor-pointer"
         />
     </div>
 );
@@ -116,7 +117,6 @@ export default function VideoPlayer({
     const lastUpdateTime = useRef(0);
     const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null);
 
-    // --- RE-INSTATED: Input detection ---
     const isTypingInInput = (el: HTMLElement | null): boolean => {
         if (!el) return false;
         const tag = el.tagName.toLowerCase();
@@ -208,7 +208,6 @@ export default function VideoPlayer({
         }, 3000);
     };
 
-    // --- RE-INSTATED: Keyboard Controls ---
     useEffect(() => {
         const handleKeys = (e: KeyboardEvent) => {
             if (isTypingInInput(e.target as HTMLElement)) return;
@@ -249,15 +248,13 @@ export default function VideoPlayer({
 
     const handleCanPlay = () => {
         setIsLoading(false);
-        setIsPlaying(true);
-        videoRef.current?.play().catch(() => setIsPlaying(false));
     };
 
     if (!videoUrl) {
         return (
             <div className="w-full bg-black aspect-video flex items-center justify-center rounded-md">
-                <p className="text-white text-center p-4 italic opacity-50">
-                    Select a lesson from the sidebar to begin.
+                <p className="text-white text-[10px] font-black uppercase tracking-widest opacity-40">
+                    Select a lesson to begin
                 </p>
             </div>
         );
@@ -266,21 +263,19 @@ export default function VideoPlayer({
     return (
         <div
             ref={containerRef}
-            className="relative w-full bg-black rounded-md group aspect-video overflow-hidden shadow-2xl border border-white/5"
+            className="relative w-full bg-black rounded-md group aspect-video overflow-hidden border border-white/5"
             onMouseMove={showControls}
             onMouseLeave={() => isPlaying && setIsControlsVisible(false)}
         >
             {isLoading && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                    <Icon.Spinner />
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-md transition-all">
+                    <Icon.LoadingState />
                 </div>
             )}
 
             <video
-                key={videoUrl}
                 ref={videoRef}
-                className="w-full h-full object-contain rounded-md"
-                // 🟢 FIXED: Fallback to empty string for null safety
+                className="w-full h-full object-contain"
                 src={videoUrl || ""} 
                 onClick={togglePlay}
                 onTimeUpdate={handleTimeUpdate}
@@ -290,47 +285,45 @@ export default function VideoPlayer({
                 onCanPlay={handleCanPlay}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
-                // Auto-sync volume if user has a preference
                 muted={isMuted}
+                playsInline
             />
 
-            {!isLoading && (
-                <div
-                    className={cn(
-                        "absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300",
-                        isControlsVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-                    )}
-                >
-                    <ProgressBar progressRef={progressRef} progress={progress} onSeek={handleSeek} />
+            <div
+                className={cn(
+                    "absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity duration-500",
+                    isControlsVisible || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
+                )}
+            >
+                <ProgressBar progressRef={progressRef} progress={progress} onSeek={handleSeek} />
 
-                    <div className="flex items-center justify-between text-white">
-                        <div className="flex items-center space-x-4">
-                            <button onClick={togglePlay} className="hover:text-primary transition-colors">
-                                {isPlaying ? <Icon.Pause /> : <Icon.Play />}
-                            </button>
+                <div className="flex items-center justify-between text-white mt-2">
+                    <div className="flex items-center space-x-6">
+                        <button onClick={togglePlay} className="hover:text-[#2694C6] transition-colors scale-125">
+                            {isPlaying ? <Icon.Pause /> : <Icon.Play />}
+                        </button>
 
-                            <VolumeControl
-                                volume={volume}
-                                isMuted={isMuted}
-                                onVolumeChange={changeVolume}
-                                onToggleMute={toggleMute}
-                            />
+                        <VolumeControl
+                            volume={volume}
+                            isMuted={isMuted}
+                            onVolumeChange={changeVolume}
+                            onToggleMute={toggleMute}
+                        />
 
-                            <span className="text-sm font-mono tracking-tighter">
-                                {formatTime(currentTime)} <span className="text-white/40">/</span> {formatTime(duration)}
-                            </span>
-                        </div>
+                        <span className="text-[11px] font-black uppercase tracking-widest tabular-nums text-white/80">
+                            {formatTime(currentTime)} <span className="text-white/20 mx-1">|</span> {formatTime(duration)}
+                        </span>
+                    </div>
 
-                        <div className="flex items-center space-x-4">
-                            <PlaybackRateControl playbackRate={playbackRate} onRateChange={changeRate} />
+                    <div className="flex items-center space-x-6">
+                        <PlaybackRateControl playbackRate={playbackRate} onRateChange={changeRate} />
 
-                            <button onClick={toggleFullscreen} className="hover:text-primary transition-colors">
-                                <Icon.Fullscreen />
-                            </button>
-                        </div>
+                        <button onClick={toggleFullscreen} className="hover:text-[#2694C6] transition-colors">
+                            <Icon.Fullscreen />
+                        </button>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

@@ -47,8 +47,8 @@ export default function CourseContentTabs({ activeTab, setActiveTab, activeConte
     if (relevantTabs.length === 0) return null;
 
     return (
-        <div className="border border-gray-200 bg-white sticky top-16 lg:top-0 z-30 mt-4 px-4 rounded-t-2xl shadow-sm">
-            <nav className="-mb-px flex space-x-8 overflow-x-auto px-4 md:px-0" aria-label="Tabs">
+        <div className="border border-gray-200 bg-white relative mt-4 px-4 rounded-t-md">
+            <nav className="-mb-px flex space-x-8 overflow-x-auto px-4 md:px-0 scrollbar-hide" aria-label="Tabs">
                 {ALL_TABS
                     .filter(tab => relevantTabs.includes(tab.key))
                     .map((tab) => (
@@ -56,10 +56,10 @@ export default function CourseContentTabs({ activeTab, setActiveTab, activeConte
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         className={`
-                            whitespace-nowrap py-5 px-1 border-b-2 font-bold text-xs uppercase tracking-widest transition-all
+                            whitespace-nowrap py-5 px-1 border-b-2 font-black text-[10px] uppercase tracking-[0.2em] transition-all
                             ${activeTab === tab.key
                                 ? "border-[#2694C6] text-[#2694C6]"
-                                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+                                : "border-transparent text-gray-400 hover:text-gray-900 hover:border-gray-300"
                             }
                         `}
                     >
