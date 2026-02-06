@@ -17,7 +17,7 @@ export function GridBookCard({
   const { addToCart } = useCart();
 
   const bookHref = activeSlug ? `/${activeSlug}/books/${slug}` : `/books/${slug}`;
-  const readHref = activeSlug ? `/${activeSlug}/books/read/${slug}` : `/books/read/${slug}`;
+  const readHref = activeSlug ? `/${activeSlug}/read/${slug}` : `/read/${slug}`;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();

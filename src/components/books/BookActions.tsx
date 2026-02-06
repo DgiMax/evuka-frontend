@@ -28,7 +28,7 @@ export function BookActions({ book }: { book: any }) {
 
   const handleMainAction = () => {
     if (book.is_owned) {
-      router.push(`/books/read/${book.slug}`);
+      router.push(`/read/${book.slug}`);
     } else {
       handleAddToCart();
       router.push('/cart');

@@ -85,7 +85,7 @@ export function EventActions({ event }: { event: any }) {
     if (!event?.is_paid) {
       setLoading(true);
       try {
-        await api.post(`/events/${event.slug}/register/`);
+        await api.post(`/events/registered-events/${event.slug}/register/`);
         toast.success("Successfully registered!");
         router.refresh();
       } catch (err: any) {
@@ -103,7 +103,7 @@ export function EventActions({ event }: { event: any }) {
   const handleJoin = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/events/${event.slug}/join/`);
+      const res = await api.get(`/events/registered-events/${event.slug}/join/`);
       if (res.data.type === 'external') {
         window.open(res.data.url, '_blank');
       } else if (res.data.type === 'native') {

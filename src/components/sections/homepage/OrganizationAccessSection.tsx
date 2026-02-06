@@ -66,7 +66,7 @@ export default function OrganizationAccessSection() {
         {/* CTA */}
         <div className="text-center">
           <Link
-            href="/organizations/browse"
+            href="/organizations"
             className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-semibold px-8 py-4 rounded-md shadow hover:opacity-90 transition-all"
           >
             Browse Organizations

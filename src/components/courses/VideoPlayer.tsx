@@ -57,33 +57,38 @@ const Icon = {
 const formatTime = (t: number) =>
     `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 
-const ProgressBar = ({ progressRef, progress, onSeek }: any) => (
+const ProgressBar = ({ progressRef, progress, onSeek, isMini }: any) => (
     <div
         ref={progressRef}
         onClick={onSeek}
-        className="w-full h-1 bg-white/20 cursor-pointer rounded-full mb-2 relative group/progress"
+        className={cn(
+            "w-full bg-white/20 cursor-pointer rounded-full relative group/progress",
+            isMini ? "h-0.5 mb-1" : "h-1 mb-2"
+        )}
     >
         <div className="absolute inset-0 group-hover/progress:h-2 group-hover/progress:-top-0.5 transition-all"></div>
         <div className="h-full bg-[#2694C6] rounded-full relative transition-all" style={{ width: `${progress}%` }}>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#2694C6] rounded-full scale-0 group-hover/progress:scale-100 transition-transform shadow-md" />
+            {!isMini && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#2694C6] rounded-full scale-0 group-hover/progress:scale-100 transition-transform shadow-md" />}
         </div>
     </div>
 );
 
-const VolumeControl = ({ volume, isMuted, onVolumeChange, onToggleMute }: any) => (
+const VolumeControl = ({ volume, isMuted, onVolumeChange, onToggleMute, isMini }: any) => (
     <div className="flex items-center group">
         <button onClick={onToggleMute}>
-            {isMuted || volume === 0 ? <Icon.VolumeOff /> : <Icon.VolumeUp />}
+            {isMuted || volume === 0 ? <Icon.VolumeOff className={isMini ? "w-4 h-4" : "w-6 h-6"} /> : <Icon.VolumeUp className={isMini ? "w-4 h-4" : "w-6 h-6"} />}
         </button>
-        <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={volume}
-            onChange={onVolumeChange}
-            className="w-0 group-hover:w-24 h-1 ml-2 transition-all duration-300 opacity-0 group-hover:opacity-100 accent-[#2694C6] cursor-pointer"
-        />
+        {!isMini && (
+            <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={onVolumeChange}
+                className="w-0 group-hover:w-24 h-1 ml-2 transition-all duration-300 opacity-0 group-hover:opacity-100 accent-[#2694C6] cursor-pointer"
+            />
+        )}
     </div>
 );
 
@@ -93,12 +98,14 @@ export default function VideoPlayer({
     onProgressUpdate,
     onLessonComplete,
     startTime,
+    isMini = false,
 }: {
     videoUrl: string | null;
     lessonId?: number;
     onProgressUpdate: (lessonId: number, timestamp: number, completed?: boolean) => void;
     onLessonComplete: () => void;
     startTime?: number;
+    isMini?: boolean;
 }) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const progressRef = useRef<HTMLDivElement>(null);
@@ -205,8 +212,25 @@ export default function VideoPlayer({
         if (hideControlsTimeout.current) clearTimeout(hideControlsTimeout.current);
         hideControlsTimeout.current = setTimeout(() => {
             if (isPlaying) setIsControlsVisible(false);
-        }, 3000);
+        }, isMini ? 1500 : 3000);
     };
+
+    useEffect(() => {
+        if (videoRef.current && videoUrl) {
+            setIsLoading(true);
+            setProgress(0);
+            setCurrentTime(0);
+            lastUpdateTime.current = 0;
+            
+            videoRef.current.load();
+            const playPromise = videoRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    setIsPlaying(false);
+                });
+            }
+        }
+    }, [videoUrl]);
 
     useEffect(() => {
         const handleKeys = (e: KeyboardEvent) => {
@@ -222,7 +246,7 @@ export default function VideoPlayer({
                     toggleMute();
                     break;
                 case "f":
-                    toggleFullscreen();
+                    if (!isMini) toggleFullscreen();
                     break;
                 case "ArrowRight":
                     if (videoRef.current) videoRef.current.currentTime += 5;
@@ -235,7 +259,7 @@ export default function VideoPlayer({
 
         window.addEventListener("keydown", handleKeys);
         return () => window.removeEventListener("keydown", handleKeys);
-    }, [togglePlay, toggleMute, toggleFullscreen]);
+    }, [togglePlay, toggleMute, toggleFullscreen, isMini]);
 
     const handleMetadata = () => {
         const v = videoRef.current;
@@ -263,7 +287,10 @@ export default function VideoPlayer({
     return (
         <div
             ref={containerRef}
-            className="relative w-full bg-black rounded-md group aspect-video overflow-hidden border border-white/5"
+            className={cn(
+                "relative w-full bg-black rounded-md group aspect-video overflow-hidden border border-white/5",
+                isMini && "shadow-2xl"
+            )}
             onMouseMove={showControls}
             onMouseLeave={() => isPlaying && setIsControlsVisible(false)}
         >
@@ -291,16 +318,17 @@ export default function VideoPlayer({
 
             <div
                 className={cn(
-                    "absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity duration-500",
+                    "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity duration-500",
+                    isMini ? "p-3" : "p-6",
                     isControlsVisible || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
             >
-                <ProgressBar progressRef={progressRef} progress={progress} onSeek={handleSeek} />
+                <ProgressBar progressRef={progressRef} progress={progress} onSeek={handleSeek} isMini={isMini} />
 
                 <div className="flex items-center justify-between text-white mt-2">
-                    <div className="flex items-center space-x-6">
-                        <button onClick={togglePlay} className="hover:text-[#2694C6] transition-colors scale-125">
-                            {isPlaying ? <Icon.Pause /> : <Icon.Play />}
+                    <div className="flex items-center space-x-4 md:space-x-6">
+                        <button onClick={togglePlay} className={cn("hover:text-[#2694C6] transition-colors", isMini ? "scale-100" : "scale-125")}>
+                            {isPlaying ? <Icon.Pause className={isMini ? "w-4 h-4" : "w-6 h-6"} /> : <Icon.Play className={isMini ? "w-4 h-4" : "w-6 h-6"} />}
                         </button>
 
                         <VolumeControl
@@ -308,19 +336,30 @@ export default function VideoPlayer({
                             isMuted={isMuted}
                             onVolumeChange={changeVolume}
                             onToggleMute={toggleMute}
+                            isMini={isMini}
                         />
 
-                        <span className="text-[11px] font-black uppercase tracking-widest tabular-nums text-white/80">
-                            {formatTime(currentTime)} <span className="text-white/20 mx-1">|</span> {formatTime(duration)}
-                        </span>
+                        {!isMini && (
+                            <span className="text-[11px] font-black uppercase tracking-widest tabular-nums text-white/80">
+                                {formatTime(currentTime)} <span className="text-white/20 mx-1">|</span> {formatTime(duration)}
+                            </span>
+                        )}
                     </div>
 
-                    <div className="flex items-center space-x-6">
-                        <PlaybackRateControl playbackRate={playbackRate} onRateChange={changeRate} />
+                    <div className="flex items-center space-x-4 md:space-x-6">
+                        {!isMini && <PlaybackRateControl playbackRate={playbackRate} onRateChange={changeRate} />}
 
-                        <button onClick={toggleFullscreen} className="hover:text-[#2694C6] transition-colors">
-                            <Icon.Fullscreen />
-                        </button>
+                        {!isMini && (
+                            <button onClick={toggleFullscreen} className="hover:text-[#2694C6] transition-colors">
+                                <Icon.Fullscreen />
+                            </button>
+                        )}
+                        
+                        {isMini && (
+                            <span className="text-[9px] font-black uppercase tracking-widest text-white/60">
+                                {formatTime(currentTime)}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>

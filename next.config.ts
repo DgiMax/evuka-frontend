@@ -33,6 +33,13 @@ const nextConfig = {
       },
     ],
   },
+
+  webpack: (config: any) => { // Added : any here
+  config.resolve.alias.canvas = false;
+  config.resolve.alias.encoding = false;
+  return config;
+},
 };
 
-module.exports = nextConfig;
+// Use export default instead of module.exports if you are using .mjs
+export default nextConfig;

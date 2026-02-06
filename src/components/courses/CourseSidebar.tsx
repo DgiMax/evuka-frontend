@@ -39,7 +39,7 @@ interface CourseAssignment {
 interface LiveLesson {
   id: number;
   title: string;
-  is_active: boolean; 
+  status: string; 
 }
 
 interface LiveClass {
@@ -70,8 +70,8 @@ interface Course {
   progress: CourseProgress;
 }
 
-type ActiveContent = {
-  type: "lesson" | "quiz" | "assignment" | "live";
+export type ActiveContent = {
+  type: "lesson" | "quiz" | "assignment" | "live" | "resource";
   data: any;
 };
 
@@ -113,6 +113,11 @@ const CourseSidebar = ({
       if (activeModuleIndex !== -1) {
         setOpenSections((prev) => ({ ...prev, [activeModuleIndex]: true }));
       }
+
+      const isLivePast = course.live_classes.some(lc => 
+        lc.past_lessons?.some(pl => pl.id === activeContent.data.id && activeContent.type === "live")
+      );
+      if (isLivePast) setIsPastLessonsOpen(true);
     }
   }, [activeContent, course]);
 
@@ -154,7 +159,7 @@ const CourseSidebar = ({
       isDone = !!item.latest_submission;
     } else if (type === "live") {
       IconComponent = VideoIcon;
-      iconColor = item.is_active ? "text-red-600 animate-pulse" : "text-muted-foreground";
+      iconColor = item.status === 'live' ? "text-red-600 animate-pulse" : "text-muted-foreground";
     }
 
     const isActive = activeContent?.type === type && activeContent.data.id === item.id;
@@ -201,7 +206,7 @@ const CourseSidebar = ({
                 </span>
             )}
 
-            {type === "live" && item.is_active && (
+            {type === "live" && item.status === 'live' && (
                 <span className="flex h-2 w-2 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
             )}
         </div>

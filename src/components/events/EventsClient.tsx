@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { debounce } from "lodash";
 import { Inbox, LayoutGrid, List, SlidersHorizontal, X, Video, MapPin, Zap, Loader2 } from 'lucide-react';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -34,23 +35,14 @@ export default function EventsClient() {
     const [isLoading, setIsLoading] = useState(true);
     const [isFiltering, setIsFiltering] = useState(false);
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+    const isMounted = useRef(false);
 
     const activeType = searchParams.get("type") || "all";
 
-    useEffect(() => {
-        const savedMode = localStorage.getItem('eventViewPreference') as 'grid' | 'list';
-        if (savedMode) setViewMode(savedMode);
-    }, []);
-
-    const handleViewModeChange = (mode: 'grid' | 'list') => {
-        setViewMode(mode);
-        localStorage.setItem('eventViewPreference', mode);
-    };
-
-    const fetchEvents = useCallback(async (params = "") => {
+    const fetchEvents = useCallback(async (queryString: string) => {
         setIsFiltering(true);
         try {
-            const res = await api.get(`events/${params}`);
+            const res = await api.get(`events/${queryString ? `?${queryString}` : ""}`);
             setEvents(Array.isArray(res.data) ? res.data : res.data.results || []);
         } catch (err) {
             console.error(err);
@@ -60,30 +52,46 @@ export default function EventsClient() {
         }
     }, []);
 
+    const debouncedFetch = useMemo(() => debounce(fetchEvents, 400), [fetchEvents]);
+
     useEffect(() => {
         const fetchInitial = async () => {
+            setIsLoading(true);
             try {
                 const [filtersRes] = await Promise.all([
-                    api.get("events/filter-options/"),
-                    fetchEvents(window.location.search)
+                    api.get("events/filter-options/")
                 ]);
                 setFilterOptions(filtersRes.data);
+                
+                const currentQuery = window.location.search.substring(1);
+                await fetchEvents(currentQuery);
             } catch (err) { 
                 console.error(err); 
+            } finally {
+                isMounted.current = true;
             }
         };
         fetchInitial();
     }, [activeSlug, fetchEvents]);
 
+    useEffect(() => {
+        if (isMounted.current) {
+            fetchEvents(searchParams.toString());
+        }
+    }, [searchParams, fetchEvents]);
+
     const handleFilterChange = (params: any) => {
         const query = new URLSearchParams();
+        
+        const currentType = searchParams.get("type");
+        if (currentType) query.set("type", currentType);
+
         Object.entries(params).forEach(([key, val]) => {
             if (Array.isArray(val)) val.forEach(v => query.append(key, v));
-            else query.append(key, String(val));
+            else query.set(key, String(val));
         });
-        const queryString = `?${query.toString()}`;
-        router.push(queryString, { scroll: false });
-        fetchEvents(queryString);
+
+        router.push(`?${query.toString()}`, { scroll: false });
     };
 
     const setType = (type: string) => {
@@ -91,8 +99,15 @@ export default function EventsClient() {
         if (type === "all") params.delete("type");
         else params.set("type", type);
         router.push(`?${params.toString()}`, { scroll: false });
-        fetchEvents(`?${params.toString()}`);
     };
+
+    if (isLoading) {
+        return (
+            <div className="max-w-[1500px] mx-auto p-4 sm:p-6 lg:p-10">
+                <CoursesListSkeleton />
+            </div>
+        );
+    }
 
     return (
         <SkeletonTheme baseColor="#f3f4f6" highlightColor="#ffffff">
@@ -124,38 +139,23 @@ export default function EventsClient() {
                 </div>
 
                 <div className="flex flex-row justify-between items-center mb-10 border-b border-gray-200 pb-6">
-                    <div className="min-w-0">
-                        <h1 className="text-xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight truncate">
-                            Marketplace <span className="text-primary">Events</span>
-                            <span className="ml-2 text-gray-400 font-medium text-lg md:text-2xl">({events.length})</span>
-                        </h1>
-                    </div>
+                    <h1 className="text-xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight truncate">
+                        Marketplace <span className="text-primary">Events</span>
+                        <span className="ml-2 text-gray-400 font-medium text-lg md:text-2xl">({events.length})</span>
+                    </h1>
                     
                     <div className="flex items-center gap-3 sm:gap-8 flex-shrink-0">
-                        <button 
-                            onClick={() => setIsMobileFilterOpen(true)} 
-                            className="lg:hidden p-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-                        >
-                            <SlidersHorizontal size={22} />
-                        </button>
+                        <button onClick={() => setIsMobileFilterOpen(true)} className="lg:hidden p-2 text-gray-600 border border-gray-200 rounded-md"><SlidersHorizontal size={22} /></button>
                         <div className="h-6 w-px bg-gray-200 lg:hidden" />
-                        <button onClick={() => handleViewModeChange('list')} className="transition-transform active:scale-90 p-1">
-                            <List size={30} className={cn(viewMode === 'list' ? "text-primary" : "text-gray-300")} />
-                        </button>
-                        <button onClick={() => handleViewModeChange('grid')} className="transition-transform active:scale-90 p-1">
-                            <LayoutGrid size={30} className={cn(viewMode === 'grid' ? "text-primary" : "text-gray-300")} />
-                        </button>
+                        <button onClick={() => setViewMode('list')} className={cn("p-1", viewMode === 'list' ? "text-primary" : "text-gray-300")}><List size={30} /></button>
+                        <button onClick={() => setViewMode('grid')} className={cn("p-1", viewMode === 'grid' ? "text-primary" : "text-gray-300")}><LayoutGrid size={30} /></button>
                     </div>
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-12">
                     <aside className="hidden lg:block w-[300px] shrink-0">
                         <div className="sticky top-28 border border-gray-200 rounded-md p-5 bg-white">
-                            {filterOptions ? (
-                                <EventFilters data={filterOptions} onFilterChange={handleFilterChange} />
-                            ) : (
-                                <CoursesListSkeleton sidebarOnly={true} />
-                            )}
+                            {filterOptions && <EventFilters data={filterOptions} onFilterChange={handleFilterChange} searchParams={searchParams} />}
                         </div>
                     </aside>
 
@@ -165,10 +165,10 @@ export default function EventsClient() {
                             <div className="absolute inset-y-0 left-0 w-full bg-white flex flex-col animate-in slide-in-from-left duration-300">
                                 <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
                                     <span className="font-black uppercase tracking-tighter text-lg text-gray-900">Filter Events</span>
-                                    <button onClick={() => setIsMobileFilterOpen(false)} className="p-2 hover:bg-gray-100 rounded-md"><X size={24} className="text-gray-900" /></button>
+                                    <button onClick={() => setIsMobileFilterOpen(false)} className="p-2 hover:bg-gray-100 rounded-md"><X size={24}/></button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-6 bg-white">
-                                    {filterOptions && <EventFilters data={filterOptions} onFilterChange={handleFilterChange} />}
+                                    {filterOptions && <EventFilters data={filterOptions} onFilterChange={handleFilterChange} searchParams={searchParams} />}
                                 </div>
                                 <div className="p-5 border-t border-gray-100 bg-white sticky bottom-0">
                                     <button onClick={() => setIsMobileFilterOpen(false)} className="w-full bg-primary text-white py-4 rounded-md font-bold text-sm active:scale-[0.98] transition-all uppercase tracking-wider">
@@ -180,25 +180,16 @@ export default function EventsClient() {
                     )}
 
                     <main className="flex-1 relative">
-                        {isFiltering && !isLoading && (
+                        {isFiltering && (
                             <div className="absolute inset-0 bg-white/40 z-20 flex items-start justify-center pt-32 backdrop-blur-[2px]">
                                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
                             </div>
                         )}
                         
-                        {isLoading ? (
-                            <CoursesListSkeleton />
-                        ) : events.length > 0 ? (
-                            <div className={cn(
-                                "transition-all duration-300", 
-                                viewMode === 'list' 
-                                    ? "space-y-6" 
-                                    : "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"
-                            )}>
+                        {events.length > 0 ? (
+                            <div className={cn("transition-all duration-300", viewMode === 'list' ? "space-y-6" : "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6")}>
                                 {events.map((event) => (
-                                    viewMode === 'list' 
-                                        ? <LongEventCard key={event.slug} event={event} /> 
-                                        : <GridEventCard key={event.slug} event={event} />
+                                    viewMode === 'list' ? <LongEventCard key={event.slug} event={event} /> : <GridEventCard key={event.slug} event={event} />
                                 ))}
                             </div>
                         ) : (

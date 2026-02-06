@@ -21,6 +21,9 @@ export default async function OrganizationLayout({
 
   const cookieStore = await cookies();
   
+  let orgExists = true;
+  let isAuthenticated = true;
+
   try {
     const response = await api.get(
       `/organizations/check-access/${organizationSlug}/`,
@@ -31,14 +34,22 @@ export default async function OrganizationLayout({
     );
 
     if (response.data.organization_exists === false) {
-      notFound();
+      orgExists = false;
     }
 
     if (response.data.is_authenticated === false) {
-      redirect(`/login?redirect=${encodeURIComponent(`/${organizationSlug}`)}`);
+      isAuthenticated = false;
     }
   } catch (error) {
-    console.error(error);
+    console.error("Layout Access Check Error:", error);
+  }
+
+  if (!orgExists) {
+    notFound();
+  }
+
+  if (!isAuthenticated) {
+    redirect(`/login?redirect=${encodeURIComponent(`/${organizationSlug}`)}`);
   }
 
   return (

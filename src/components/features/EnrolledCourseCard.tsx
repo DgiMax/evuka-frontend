@@ -51,13 +51,16 @@ export default function EnrolledCourseCard({ course }: { course: Course }) {
               {course.is_completed ? "Course Status" : "Continue With"}
             </p>
             <div className="flex items-center gap-2">
-              {course.is_completed ? (
+              {progressValue === 100 ? (
                 <CheckCircle2 size={14} className="text-green-500 shrink-0" />
               ) : (
                 <PlayCircle size={14} className="text-[#2694C6] shrink-0" />
               )}
+
               <span className="text-[11px] font-bold text-gray-700 truncate">
-                {course.next_lesson || "Start Learning"}
+                {progressValue === 0 && "Start Learning"}
+                {progressValue > 0 && progressValue < 100 && "Continue Learning"}
+                {progressValue === 100 && "Course Completed"}
               </span>
             </div>
           </div>

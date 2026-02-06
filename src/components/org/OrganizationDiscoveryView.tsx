@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api/axios";
 import { Search, Inbox, Building2, CheckCircle2 } from "lucide-react";
@@ -82,12 +82,14 @@ const OrganizationCardSkeleton = () => (
 export default function OrganizationDiscoveryView() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isFirstRender = useRef(true);
 
   const [organizations, setOrganizations] = useState<OrganizationListItem[]>([]);
   const [filters, setFilters] = useState<FiltersState>({
-    search: "",
-    org_type: "",
-    membership_period: "",
+    search: searchParams.get("search") || "",
+    org_type: searchParams.get("type") || "",
+    membership_period: searchParams.get("period") || "",
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -136,22 +138,33 @@ export default function OrganizationDiscoveryView() {
   );
 
   useEffect(() => {
-    getFilteredOrganizations(filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const typeFromUrl = searchParams.get("type") || "";
+    const searchFromUrl = searchParams.get("search") || "";
+    const periodFromUrl = searchParams.get("period") || "";
+
+    const urlFilters = {
+      search: searchFromUrl,
+      org_type: typeFromUrl,
+      membership_period: periodFromUrl,
+    };
+
+    setFilters(urlFilters);
+    getFilteredOrganizations(urlFilters);
+  }, [searchParams, getFilteredOrganizations]);
 
   const handleFilterChange = useCallback(
     (newFilters: Partial<FiltersState>) => {
       const updatedFilters = { ...filters, ...newFilters };
-      setFilters(updatedFilters);
-
-      if (newFilters.search !== undefined) {
-        debouncedGetFilteredOrganizations(updatedFilters);
-      } else {
-        getFilteredOrganizations(updatedFilters);
-      }
+      
+      const params = new URLSearchParams();
+      if (updatedFilters.search) params.set("search", updatedFilters.search);
+      if (updatedFilters.org_type) params.set("type", updatedFilters.org_type);
+      if (updatedFilters.membership_period) params.set("period", updatedFilters.membership_period);
+      
+      const query = params.toString();
+      router.push(query ? `?${query}` : window.location.pathname, { scroll: false });
     },
-    [filters, debouncedGetFilteredOrganizations, getFilteredOrganizations]
+    [filters, router]
   );
 
   const handleEnrollmentClick = (org: OrganizationListItem) => {
@@ -176,7 +189,6 @@ export default function OrganizationDiscoveryView() {
   return (
     <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
       <div className="container mx-auto py-12 px-4 max-w-7xl">
-
         <div className="flex flex-col items-center mb-10 text-center space-y-3">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
             Discover Organizations
@@ -245,7 +257,7 @@ export default function OrganizationDiscoveryView() {
             </Select>
           </div>
         </div>
- 
+
         {showLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {[...Array(6)].map((_, i) => (
@@ -261,7 +273,6 @@ export default function OrganizationDiscoveryView() {
                 onClick={() => handleViewProfile(org.slug)}
               >
                 <div className="p-5 flex flex-col flex-grow">
-                  
                   <div className="flex items-start gap-4 mb-4">
                     <div className="h-12 w-12 rounded-md bg-secondary/10 flex items-center justify-center text-primary shrink-0">
                       <Building2 className="w-6 h-6" />

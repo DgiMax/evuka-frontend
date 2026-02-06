@@ -1,6 +1,7 @@
+"use client";
+
 import WhyEVukaComponent from "@/components/cards/WhyEVukaComponent";
 
-// Data for the six feature cards
 const dvukaFeatures = [
   {
     title: "Languages",
@@ -60,27 +61,24 @@ const dvukaFeatures = [
 
 export default function WhyEVukaSection() {
   return (
-    <section className="py-16 sm:px-8 sm:py-24 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <section className="py-16 sm:py-24 bg-white border-t border-border/40 shadow-none overflow-hidden">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div className="text-center mb-12 sm:mb-16">
+          <h4 className="text-3xl sm:text-4xl font-black text-foreground mb-4 tracking-tight">
+            Why Evuka?
+          </h4>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed font-medium">
+            Learning that connects culture, technology, and community.
+          </p>
+        </div>
 
-        <h4 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-3">
-          Why evuka?
-        </h4>
-
-        <p className="text-lg sm:text-xl text-muted-foreground mb-12 mx-auto max-w-[500px]">
-          Learning that connects culture, technology, and community.
-        </p>
-
-        <div className="
-          grid 
-          grid-cols-1 
-          sm:grid-cols-2 
-          lg:grid-cols-3 
-          gap-6 
-          lg:gap-8
-        ">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 shadow-none">
           {dvukaFeatures.map((feature) => (
-            <div key={feature.title} className="h-full sm:w-full **max-w-md mx-auto sm:max-w-none sm:mx-0**">
+            <div 
+              key={feature.title} 
+              className="w-full flex shadow-none transition-transform duration-300 hover:-translate-y-1"
+            >
               <WhyEVukaComponent
                 title={feature.title}
                 description={feature.description}

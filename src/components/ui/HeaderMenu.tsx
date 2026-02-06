@@ -34,7 +34,6 @@ export function HeaderMenu() {
   }
 
   return (
-    // Keep the outer div as is
     <div className="hidden md:flex items-center space-x-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -48,11 +47,14 @@ export function HeaderMenu() {
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-56"> {/* Increased width slightly */}
+        <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link href="/dashboard">My Dashboard</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/my-library">My Library</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/profile">My Profile</Link>
@@ -64,20 +66,16 @@ export function HeaderMenu() {
             <Link href="/announcements">Announcements</Link>
           </DropdownMenuItem>
 
-          {/* === Section for Context Switcher === */}
           <DropdownMenuSeparator />
-          {/* Add padding around the switcher */}
           <div className="px-2 py-1.5">
-             {/* ✅ Pass a className to adjust width */}
             <OrganizationSwitcher triggerClassName="w-full justify-between" />
           </div>
-          {/* ================================== */}
 
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={handleSignOut}
             disabled={signOutLoading}
-            className="text-red-600 focus:text-red-600 focus:bg-red-100 dark:focus:bg-red-900/30 cursor-pointer" // Added cursor-pointer
+            className="text-red-600 focus:text-red-600 focus:bg-red-100 dark:focus:bg-red-900/30 cursor-pointer"
           >
             {signOutLoading ? "Logging out..." : "Logout"}
           </DropdownMenuItem>

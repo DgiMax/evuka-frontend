@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TabType } from "./CourseContentTabs";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,7 @@ import CourseNotepad from "./CourseNotepad";
 import CourseQnA from "./CourseQnA";
 import ReactMarkdown from "react-markdown"; 
 import remarkGfm from "remark-gfm";
-import { Download, ExternalLink, BookOpen, CheckCircle2, FileText, Link as LinkIcon, ArrowRight, Lock } from "lucide-react";
+import { Image as ImageIcon, Link as LinkIcon, BookOpen, Download, File, CheckCircle2, FileText, ArrowRight, X } from "lucide-react";
 
 interface Resource {
     id: number;
@@ -45,6 +45,7 @@ interface Lesson {
     resources: Resource[]; 
     is_completed: boolean; 
     quizzes: Quiz[]; 
+    video_url?: string;
 }
 
 interface Course { 
@@ -53,7 +54,7 @@ interface Course {
 }
 
 export type ActiveContent = { 
-    type: 'lesson' | 'quiz' | 'assignment' | 'live'; 
+    type: 'lesson' | 'quiz' | 'assignment' | 'live' | 'resource'; 
     data: any; 
 } 
 
@@ -68,6 +69,7 @@ interface TabContentProps {
     joinLiveSession?: () => void;
     setJoiningLive?: React.Dispatch<React.SetStateAction<boolean>>;
     onPurchaseResource: (slug?: string) => void;
+    onOpenResource: (resource: Resource) => void;
 }
 
 const LessonContentContainer: React.FC<{ 
@@ -182,7 +184,11 @@ const LessonContentContainer: React.FC<{
     );
 };
 
-const LessonResourcesTab: React.FC<{ lesson: Lesson, onPurchaseResource: (slug?: string) => void }> = ({ lesson, onPurchaseResource }) => {
+const LessonResourcesTab: React.FC<{ 
+    lesson: Lesson, 
+    onPurchaseResource: (slug?: string) => void, 
+    onOpenResource: (res: Resource) => void 
+}> = ({ lesson, onPurchaseResource, onOpenResource }) => {
     const router = useRouter();
     const resources = lesson.resources || [];
 
@@ -194,68 +200,113 @@ const LessonResourcesTab: React.FC<{ lesson: Lesson, onPurchaseResource: (slug?:
         );
     }
 
+    const normalizeUrl = (url: string | null) => {
+        if (!url) return "";
+        return url.replace(/\\/g, '/');
+    };
+
+    const isInternalPreview = (res: Resource) => {
+        const file = normalizeUrl(res.file);
+        if (!file) return false;
+        const ext = file.split('.').pop()?.toLowerCase();
+        return ['pdf', 'png', 'jpg', 'jpeg', 'webp'].includes(ext || '');
+    };
+
+    const getFileMetadata = (res: Resource) => {
+        if (res.resource_type === 'link') return { icon: <LinkIcon size={18} />, color: "blue" };
+        if (res.resource_type === 'book_ref') return { icon: <BookOpen size={18} />, color: "orange" };
+        
+        const file = res.file;
+        if (!file) return { icon: <File size={18} />, color: "gray" };
+        
+        const ext = file.split('.').pop()?.toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'webp'].includes(ext || '')) return { icon: <ImageIcon size={18} />, color: "emerald" };
+        if (ext === 'pdf') return { icon: <FileText size={18} />, color: "rose" };
+        
+        return { icon: <Download size={18} />, color: "cyan" };
+    };
+
     const handleAction = (res: Resource) => {
-        if (res.resource_type === 'book_ref') {
-            if (res.access_status?.has_access) {
-                router.push(`/my-library/${res.book_details?.slug}`);
+        const fixedRes = { ...res, file: normalizeUrl(res.file) };
+        
+        if (fixedRes.resource_type === 'book_ref') {
+            if (fixedRes.access_status?.has_access) {
+                onOpenResource(fixedRes);
             } else {
-                onPurchaseResource(res.book_details?.slug);
+                onPurchaseResource(fixedRes.book_details?.slug);
             }
-        } else if (res.resource_type === 'link' && res.external_url) {
-            window.open(res.external_url, '_blank');
-        } else if (res.resource_type === 'file' && res.file) {
-            window.open(res.file, '_blank');
+        } else if (isInternalPreview(fixedRes)) {
+            onOpenResource(fixedRes);
+        } else if (fixedRes.resource_type === 'link' && fixedRes.external_url) {
+            window.open(fixedRes.external_url, '_blank');
+        } else if (fixedRes.resource_type === 'file' && fixedRes.file) {
+            window.open(fixedRes.file, '_blank');
         }
     };
 
     return (
-        <div className="mt-4 space-y-10">
+        <div className="mt-4 space-y-8">
             <div>
-                <h4 className="text-2xl font-black tracking-tighter text-gray-900 uppercase">Learning Materials</h4>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Supplementary files and references for this session.</p>
+                <h4 className="text-xl font-black tracking-tighter text-gray-900 uppercase">Learning Materials</h4>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Supplementary files and references.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {resources.map((res) => {
                     const isBook = res.resource_type === 'book_ref';
                     const isLink = res.resource_type === 'link';
+                    const isPreviewable = isInternalPreview(res);
                     const hasAccess = res.access_status?.has_access;
+                    const meta = getFileMetadata(res);
 
                     return (
-                        <div key={res.id} className="flex flex-col p-6 bg-white border border-gray-100 rounded-md transition-all hover:border-[#2694C6] group relative overflow-hidden">
-                            <div className="flex items-start gap-4 mb-6">
-                                <div className={cn(
-                                    "p-3 rounded-md shrink-0 transition-colors border",
-                                    isLink ? "bg-blue-50 border-blue-100 text-blue-600" : isBook ? "bg-orange-50 border-orange-100 text-orange-600" : "bg-[#2694C6]/5 border-[#2694C6]/10 text-[#2694C6]"
-                                )}>
-                                    {isLink ? <LinkIcon size={20} /> : isBook ? <BookOpen size={20} /> : <Download size={20} />}
+                        <div key={res.id} className="flex flex-col bg-white border border-gray-100 rounded-md transition-all hover:border-[#2694C6] hover:shadow-sm group overflow-hidden">
+                            <div className="p-4 flex-1">
+                                <div className="flex items-start gap-3 mb-3">
+                                    <div className={cn(
+                                        "p-2 rounded-md shrink-0 border transition-colors",
+                                        meta.color === 'blue' && "bg-blue-50 border-blue-100 text-blue-600",
+                                        meta.color === 'orange' && "bg-orange-50 border-orange-100 text-orange-600",
+                                        meta.color === 'emerald' && "bg-emerald-50 border-emerald-100 text-emerald-600",
+                                        meta.color === 'rose' && "bg-rose-50 border-rose-100 text-rose-600",
+                                        meta.color === 'cyan' && "bg-cyan-50 border-cyan-100 text-cyan-600",
+                                        meta.color === 'gray' && "bg-gray-50 border-gray-100 text-gray-600"
+                                    )}>
+                                        {meta.icon}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-bold text-gray-900 truncate text-[13px] uppercase tracking-tight leading-tight">
+                                            {res.title}
+                                        </p>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1.5">
+                                            {res.resource_type.replace('_', ' ')}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="font-black text-gray-900 truncate text-base uppercase tracking-tight leading-none">{res.title}</p>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">{res.resource_type.replace('_', ' ')}</p>
-                                </div>
-                            </div>
-                            
-                            {res.description && (
-                                <p className="text-xs font-medium text-gray-500 line-clamp-2 leading-relaxed mb-6">{res.description}</p>
-                            )}
-
-                            {res.reading_instructions && (
-                                <div className="mb-6 text-[11px] bg-gray-50 p-4 border-l-2 border-[#2694C6] text-gray-600 font-medium">
-                                    &ldquo;{res.reading_instructions}&rdquo;
-                                </div>
-                            )}
-
-                            <button 
-                                onClick={() => handleAction(res)}
-                                className={cn(
-                                    "mt-auto w-full py-3.5 rounded-md text-[10px] font-black uppercase tracking-[0.2em] transition-all",
-                                    isBook && !hasAccess 
-                                        ? "bg-gray-900 text-white hover:bg-[#2694C6]" 
-                                        : "bg-gray-50 text-gray-900 hover:bg-gray-100 border border-gray-100"
+                                
+                                {res.description && (
+                                    <p className="text-[11px] font-medium text-gray-500 line-clamp-2 leading-relaxed mb-3 italic">
+                                        {res.description}
+                                    </p>
                                 )}
-                            >
-                                {isBook ? (hasAccess ? "Read eBook" : "Unlock Book") : isLink ? "Visit Link" : "Access File"}
-                            </button>
+                            </div>
+
+                            <div className="px-4 pb-4">
+                                <button 
+                                    onClick={() => handleAction(res)}
+                                    className={cn(
+                                        "w-full py-2.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-all",
+                                        (isBook && !hasAccess) || isPreviewable
+                                            ? "bg-gray-900 text-white hover:bg-[#2694C6]" 
+                                            : "bg-gray-50 text-gray-900 hover:bg-gray-100 border border-gray-100"
+                                    )}
+                                >
+                                    {isBook ? (hasAccess ? "Read eBook" : "Unlock Book") : 
+                                     isLink ? "Visit Link" : 
+                                     isPreviewable ? "Open in Viewer" : 
+                                     "Download"}
+                                </button>
+                            </div>
                         </div>
                     );
                 })}
@@ -272,7 +323,8 @@ const TabContent = ({
     courseSlug, 
     onToggleComplete, 
     setActiveContent,
-    onPurchaseResource
+    onPurchaseResource,
+    onOpenResource
 }: TabContentProps) => {
     if (!course) return null;
 
@@ -327,7 +379,7 @@ const TabContent = ({
             
             case "Resources":
                 if (type === 'lesson') {
-                    return <LessonResourcesTab lesson={data as Lesson} onPurchaseResource={onPurchaseResource} />;
+                    return <LessonResourcesTab lesson={data as Lesson} onPurchaseResource={onPurchaseResource} onOpenResource={onOpenResource} />;
                 }
                 return <div className="py-20 text-center text-gray-400 font-black uppercase tracking-widest text-[11px]">Resources are tied to the active lesson</div>;
             

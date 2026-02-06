@@ -48,17 +48,16 @@ interface AuthContextType {
   isStudent: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<any>;
-  forgotPassword: (email: string) => Promise<any>;
+  register: (username: string, email: string, password: string, origin?: string) => Promise<any>;
+  forgotPassword: (email: string, origin?: string) => Promise<any>;
   resetPassword: (token: string, password: string) => Promise<any>;
   verifyEmail: (token: string) => Promise<any>;
-  resendVerification: (email: string) => Promise<any>;
+  resendVerification: (email: string, origin?: string) => Promise<any>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<any>;
   fetchCurrentUser: (skip?: boolean) => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
@@ -160,12 +159,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = (username: string, email: string, password: string) => {
-    return api.post("/users/register/", { username, email, password });
+  const register = (username: string, email: string, password: string, origin?: string) => {
+    const data = { username, email, password, origin: origin || window.location.origin };
+    return api.post("/users/register/", data);
   };
 
-  const forgotPassword = (email: string) => {
-    return api.post("/users/forgot-password/", { email });
+  const forgotPassword = (email: string, origin?: string) => {
+    const data = { email, origin: origin || window.location.origin };
+    return api.post("/users/forgot-password/", data);
   };
 
   const resetPassword = (token: string, password: string) => {
@@ -176,8 +177,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return api.post("/users/verify-email/", { token });
   };
 
-  const resendVerification = (email: string) => {
-    return api.post("/users/resend-verification/", { email });
+  const resendVerification = (email: string, origin?: string) => {
+    const data = { email, origin: origin || window.location.origin };
+    return api.post("/users/resend-verification/", data);
   };
 
   const changePassword = (oldPassword: string, newPassword: string) => {

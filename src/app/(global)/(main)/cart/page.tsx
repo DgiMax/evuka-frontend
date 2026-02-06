@@ -1,17 +1,16 @@
-// app/cart/page.tsx (or wherever your CartPage component lives)
-
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-import { Trash2, ShoppingCart, ArrowRight, ShieldCheck, Image as ImageIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Trash2, ShoppingCart, ArrowRight, ShieldCheck, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import api from '@/lib/api/axios';
+import { toast } from 'sonner';
 
-// --- Custom Components ---
 const EmptyPlaceholder = ({ message }: { message: string }) => (
     <div className="flex flex-col items-center justify-center p-12 bg-muted/20 border-2 border-dashed border-border rounded-lg h-64 text-center">
         <ShoppingCart className="w-12 h-12 text-muted-foreground/50 mb-4" />
@@ -24,12 +23,42 @@ const EmptyPlaceholder = ({ message }: { message: string }) => (
 
 export default function CartPage() {
     const { cartItems, removeFromCart } = useCart();
+    const router = useRouter();
+    const [isValidating, setIsValidating] = useState(false);
 
     const subtotal = cartItems.reduce((acc, item) => acc + item.priceValue, 0);
     const taxes = subtotal * 0.16;
     const total = subtotal + taxes;
 
     const isCartEmpty = cartItems.length === 0;
+
+    const handleCheckout = async () => {
+        setIsValidating(true);
+        try {
+            const response = await api.post('/api/v1/cart/validate/', {
+                items: cartItems.map(item => ({
+                    slug: item.slug,
+                    type: item.type,
+                    title: item.title
+                }))
+            });
+
+            if (response.data.valid) {
+                router.push('/checkout');
+            } else {
+                response.data.removed_slugs.forEach((slug: string) => {
+                    removeFromCart(slug);
+                });
+                response.data.messages.forEach((msg: string) => {
+                    toast.error(msg);
+                });
+            }
+        } catch (error) {
+            toast.error("Failed to validate cart access. Please try again.");
+        } finally {
+            setIsValidating(false);
+        }
+    };
 
     return (
         <div className="bg-background min-h-screen py-12">
@@ -47,7 +76,6 @@ export default function CartPage() {
                                     key={item.slug}
                                     className="flex flex-col sm:flex-row bg-card p-4 border border-border rounded-lg hover:border-primary/30 transition-all gap-4 group"
                                 >
-                                    {/* Thumbnail */}
                                     <div className="w-full sm:w-32 h-32 sm:h-24 flex-shrink-0 relative rounded-md overflow-hidden bg-muted">
                                         {item.thumbnail ? (
                                             <img
@@ -62,7 +90,6 @@ export default function CartPage() {
                                         )}
                                     </div>
 
-                                    {/* Info */}
                                     <div className="flex-1 flex flex-col justify-between">
                                         <div>
                                             <div className="flex justify-between items-start gap-4">
@@ -101,7 +128,6 @@ export default function CartPage() {
                         )}
                     </div>
 
-                    {/* RIGHT: Summary Sidebar (1/3 width) */}
                     <div className="lg:col-span-1">
                         <Card className="shadow-none border-border sticky top-6 bg-muted/20">
                             <CardHeader className="pb-4 border-b border-border/50">
@@ -129,23 +155,17 @@ export default function CartPage() {
                             </CardContent>
 
                             <CardFooter className="p-6 pt-0 flex-col gap-4">
-                                {isCartEmpty ? (
-                                    <Button 
-                                        className="w-full h-12 text-base font-bold shadow-none" 
-                                        disabled={true}
-                                    >
-                                        Proceed to Checkout <ArrowRight className="w-4 h-4 ml-2" />
-                                    </Button>
-                                ) : (
-                                    <Button 
-                                        className="w-full h-12 text-base font-bold shadow-none" 
-                                        asChild
-                                    >
-                                        <Link href="/checkout">
-                                            Proceed to Checkout <ArrowRight className="w-4 h-4 ml-2" />
-                                        </Link>
-                                    </Button>
-                                )}
+                                <Button 
+                                    className="w-full h-12 text-base font-bold shadow-none" 
+                                    onClick={handleCheckout}
+                                    disabled={isCartEmpty || isValidating}
+                                >
+                                    {isValidating ? (
+                                        <>Validating Cart <Loader2 className="w-4 h-4 ml-2 animate-spin" /></>
+                                    ) : (
+                                        <>Proceed to Checkout <ArrowRight className="w-4 h-4 ml-2" /></>
+                                    )}
+                                </Button>
                                 
                                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground w-full">
                                     <ShieldCheck className="w-3.5 h-3.5 text-green-600" />

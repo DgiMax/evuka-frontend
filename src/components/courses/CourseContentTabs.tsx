@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ActiveContent } from "./CourseLearningView"; 
 
 export type TabType = "Overview" | "Content" | "Resources" | "Q&A" | "Notes" | "Announcements";
@@ -36,13 +37,29 @@ const getRelevantTabs = (activeContent: ActiveContent | null): TabType[] => {
 };
 
 export default function CourseContentTabs({ activeTab, setActiveTab, activeContent }: CourseContentTabsProps) {
+    const searchParams = useSearchParams();
+    const router = useRouter();
     const relevantTabs = getRelevantTabs(activeContent);
 
     useEffect(() => {
-        if (activeContent && !relevantTabs.includes(activeTab)) {
-            setActiveTab("Overview");
+        const urlTab = searchParams.get("tab") as TabType;
+        if (urlTab && relevantTabs.includes(urlTab) && urlTab !== activeTab) {
+            setActiveTab(urlTab);
         }
-    }, [activeContent, activeTab, relevantTabs, setActiveTab]);
+    }, [searchParams, relevantTabs, setActiveTab, activeTab]);
+
+    useEffect(() => {
+        if (activeContent && !relevantTabs.includes(activeTab)) {
+            handleTabChange("Overview");
+        }
+    }, [activeContent, activeTab, relevantTabs]);
+
+    const handleTabChange = (key: TabType) => {
+        setActiveTab(key);
+        const params = new URLSearchParams(window.location.search);
+        params.set("tab", key);
+        window.history.replaceState(null, "", `?${params.toString()}`);
+    };
 
     if (relevantTabs.length === 0) return null;
 
@@ -54,7 +71,7 @@ export default function CourseContentTabs({ activeTab, setActiveTab, activeConte
                     .map((tab) => (
                     <button
                         key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
+                        onClick={() => handleTabChange(tab.key)}
                         className={`
                             whitespace-nowrap py-5 px-1 border-b-2 font-black text-[10px] uppercase tracking-[0.2em] transition-all
                             ${activeTab === tab.key

@@ -1,15 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { SlidersHorizontal, ChevronUp, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface FiltersState {
-  categories: Record<string, boolean>;
-  levels: Record<string, boolean>;
-  formats: Record<string, boolean>;
-  price: { min: number; max: number };
-}
 
 const FilterSection = ({ title, children, defaultOpen = true }: any) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -24,28 +17,55 @@ const FilterSection = ({ title, children, defaultOpen = true }: any) => {
   );
 };
 
-export default function BookFilters({ data, onFilterChange }: any) {
+export default function BookFilters({ data, onFilterChange, activeParent, activeSub, searchParams }: any) {
   const DEFAULT_MAX_PRICE = data?.price?.max ?? 10000;
-  const isInitialMount = useRef(true);
 
-  const [filters, setFilters] = useState<FiltersState>({
-    categories: {},
-    levels: {},
-    formats: {},
+  const [filters, setFilters] = useState({
+    categories: {} as Record<string, boolean>,
+    levels: {} as Record<string, boolean>,
+    formats: {} as Record<string, boolean>,
     price: { min: 0, max: DEFAULT_MAX_PRICE },
   });
 
-  const updateFilters = (next: FiltersState) => {
-    setFilters(next);
-    const params: any = {};
-    const selectedCats = Object.keys(next.categories).filter(k => next.categories[k]);
-    if (selectedCats.length > 0) params.category = selectedCats;
+  useEffect(() => {
+    const cats: Record<string, boolean> = {};
+    const lvls: Record<string, boolean> = {};
+    const fmts: Record<string, boolean> = {};
     
-    const selectedLvls = Object.keys(next.levels).filter(k => next.levels[k]);
-    if (selectedLvls.length > 0) params.reading_level = selectedLvls;
+    searchParams.getAll("filter_category").forEach((val: string) => cats[val] = true);
+    searchParams.getAll("reading_level").forEach((val: string) => lvls[val] = true);
+    searchParams.getAll("book_format").forEach((val: string) => fmts[val] = true);
+    
+    setFilters({
+      categories: cats,
+      levels: lvls,
+      formats: fmts,
+      price: { 
+        min: Number(searchParams.get("min_price")) || 0, 
+        max: Number(searchParams.get("max_price")) || DEFAULT_MAX_PRICE 
+      }
+    });
+  }, [searchParams, DEFAULT_MAX_PRICE]);
 
-    const selectedFmts = Object.keys(next.formats).filter(k => next.formats[k]);
-    if (selectedFmts.length > 0) params.book_format = selectedFmts;
+  const displayCategories = useMemo(() => {
+    if (activeSub) return [];
+    if (activeParent) {
+      return data?.globalSubCategories?.filter((s: any) => s.parent_slug === activeParent.slug) || [];
+    }
+    return data?.globalCategories || [];
+  }, [activeParent, activeSub, data]);
+
+  const updateFilters = (next: any) => {
+    const params: any = {};
+    
+    const selCats = Object.keys(next.categories).filter(k => next.categories[k]);
+    if (selCats.length > 0) params.filter_category = selCats;
+
+    const selLvls = Object.keys(next.levels).filter(k => next.levels[k]);
+    if (selLvls.length > 0) params.reading_level = selLvls;
+
+    const selFmts = Object.keys(next.formats).filter(k => next.formats[k]);
+    if (selFmts.length > 0) params.book_format = selFmts;
 
     if (next.price.min > 0) params.min_price = String(next.price.min);
     if (next.price.max < DEFAULT_MAX_PRICE) params.max_price = String(next.price.max);
@@ -53,13 +73,12 @@ export default function BookFilters({ data, onFilterChange }: any) {
     onFilterChange?.(params);
   };
 
-  const handlePriceChange = (type: 'min' | 'max', val: number) => {
-    const next = { ...filters, price: { ...filters.price, [type]: val } };
-    updateFilters(next);
+  const handleToggle = (section: 'categories'|'levels'|'formats', id: string, checked: boolean) => {
+    updateFilters({ ...filters, [section]: { ...filters[section], [id]: checked } });
   };
 
-  const handleToggle = (section: keyof Omit<FiltersState, 'price'>, id: string, checked: boolean) => {
-    updateFilters({ ...filters, [section]: { ...filters[section], [id]: checked } });
+  const handlePriceChange = (type: 'min' | 'max', val: number) => {
+    updateFilters({ ...filters, price: { ...filters.price, [type]: val } });
   };
 
   return (
@@ -70,12 +89,17 @@ export default function BookFilters({ data, onFilterChange }: any) {
       </div>
 
       <div className="flex flex-col">
-        {data?.globalCategories?.length > 0 && (
-          <FilterSection title="Categories">
-            {data.globalCategories.map((cat: any) => (
-              <label key={cat.id} className="flex items-center py-2 cursor-pointer group">
-                <input type="checkbox" checked={!!filters.categories[cat.slug]} onChange={(e) => handleToggle("categories", cat.slug, e.target.checked)} className="h-4 w-4 border-2 border-gray-300 rounded-md checked:bg-primary checked:border-primary accent-[#2694C6]" />
-                <span className={cn("ml-3 text-[13px] transition-colors", filters.categories[cat.slug] ? "text-primary font-bold" : "text-gray-600 group-hover:text-gray-900")}>{cat.name}</span>
+        {displayCategories.length > 0 && (
+          <FilterSection title={activeParent ? "Subcategories" : "Categories"}>
+            {displayCategories.map((cat: any) => (
+              <label key={cat.slug} className="flex items-center py-2 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={!!filters.categories[cat.slug]} 
+                  onChange={(e) => handleToggle("categories", cat.slug, e.target.checked)} 
+                  className="h-4 w-4 border-2 border-gray-300 rounded-md checked:bg-[#2694C6] checked:border-[#2694C6] transition-all accent-[#2694C6]" 
+                />
+                <span className={cn("ml-3 text-[13px] transition-colors", filters.categories[cat.slug] ? "text-[#2694C6] font-bold" : "text-gray-600 group-hover:text-gray-900")}>{cat.name}</span>
               </label>
             ))}
           </FilterSection>
@@ -84,8 +108,13 @@ export default function BookFilters({ data, onFilterChange }: any) {
         <FilterSection title="Format">
           {['pdf', 'epub', 'audio'].map((fmt) => (
             <label key={fmt} className="flex items-center py-2 cursor-pointer group">
-              <input type="checkbox" checked={!!filters.formats[fmt]} onChange={(e) => handleToggle("formats", fmt, e.target.checked)} className="h-4 w-4 border-2 border-gray-300 rounded-md checked:bg-primary checked:border-primary accent-[#2694C6]" />
-              <span className={cn("ml-3 text-[13px] transition-colors uppercase", filters.formats[fmt] ? "text-primary font-bold" : "text-gray-600 group-hover:text-gray-900")}>{fmt}</span>
+              <input 
+                type="checkbox" 
+                checked={!!filters.formats[fmt]} 
+                onChange={(e) => handleToggle("formats", fmt, e.target.checked)} 
+                className="h-4 w-4 border-2 border-gray-300 rounded-md checked:bg-[#2694C6] checked:border-[#2694C6] transition-all accent-[#2694C6]" 
+              />
+              <span className={cn("ml-3 text-[13px] transition-colors uppercase", filters.formats[fmt] ? "text-[#2694C6] font-bold" : "text-gray-600 group-hover:text-gray-900")}>{fmt}</span>
             </label>
           ))}
         </FilterSection>

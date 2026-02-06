@@ -4,22 +4,19 @@ import React, { useState } from "react";
 import Input from "@/components/ui/FormInput";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import PublicRoute from "@/components/PublicRoute";
-import Image from "next/image"; // Added Image import for logo
+import Image from "next/image";
 
 const PRIMARY_TEXT_CLASS = "text-[#2694C6]";
 const PRIMARY_BUTTON_CLASS = "bg-primary hover:bg-[#1f7ba5] transition-colors"; 
 
 export default function ForgotPasswordPage() {
-  const { forgotPassword } = useAuth(); // Get function from context
+  const { forgotPassword } = useAuth();
 
-  // --- State Management ---
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Form Submission Handler ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -27,8 +24,8 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      await forgotPassword(email);
-      // Show the secure, non-revealing message from your backend
+      const origin = window.location.origin;
+      await forgotPassword(email, origin);
       setMessage("If an account with that email exists, a password reset link has been sent.");
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
@@ -38,17 +35,14 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    // Outer container matching the login page width
     <div className="mx-auto w-full max-w-sm md:max-w-md"> 
 
-      {/* Card Wrapper - matching login page's rounded-md, border, and overflow */}
       <div className="bg-white rounded-md border border-gray-200 overflow-hidden">
         
-        {/* Header Section - Identical style and structure to the login page */}
         <div className="text-center p-6 sm:p-7 border-b border-gray-100 bg-background"> 
           <div className="mx-auto mb-3" style={{ width: '180px', height: '64px' }}>
              <Image
-                src="/logo.png" // Assumed path from your login page
+                src="/logo.png"
                 alt="Evuka Logo"
                 width={180}
                 height={64}
@@ -63,15 +57,12 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
         
-        {/* Content Body */}
         <div className="w-full p-6 sm:p-7"> 
           
-          {/* Conditionally render success message or the form */}
           {message ? (
             <div className="text-center">
               <p className="text-green-600 text-lg font-medium">{message}</p>
               
-              {/* Optional: Add a button to return to login */}
               <Link href="/login" className="block w-full mt-6">
                 <button 
                     type="button"
@@ -112,7 +103,6 @@ export default function ForgotPasswordPage() {
         </div>
       </div>
       
-      {/* Footer Link - Consistent look for the 'back to login' link */}
       <div className="mt-6 text-center">
         <p className="text-gray-600">
           Remember your password?{" "}

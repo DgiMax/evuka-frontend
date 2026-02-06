@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import { ReactNode } from "react";
+import { ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const creatorBenefits = [
   {
     title: "Revenue Share",
-    description: "Earn from every learner who takes your course.",
+    description: "Earn consistent income from every learner who engages with your courses or level packages.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24">
         <g fill="none">
@@ -18,6 +22,7 @@ const creatorBenefits = [
           <path
             stroke="currentColor"
             strokeLinecap="round"
+            strokeLinejoin="round"
             strokeWidth="1.5"
             d="M21.998 12.5c0-.077.002-.533 0-.565c-.036-.501-.465-.9-1.005-.933c-.035-.002-.076-.002-.16-.002h-2.602C16.446 11 15 12.343 15 14s1.447 3 3.23 3h2.603c.084 0 .125 0 .16-.002c.54-.033.97-.432 1.005-.933c.002-.032.002-.488.002-.565"
           />
@@ -25,6 +30,7 @@ const creatorBenefits = [
           <path
             stroke="currentColor"
             strokeLinecap="round"
+            strokeLinejoin="round"
             strokeWidth="1.5"
             d="M10 22h3c3.771 0 5.657 0 6.828-1.172c.809-.808 1.06-1.956 1.137-3.828m0-6c-.078-1.872-.328-3.02-1.137-3.828C18.657 6 16.771 6 13 6h-3C6.229 6 4.343 6 3.172 7.172S2 10.229 2 14s0 5.657 1.172 6.828c.653.654 1.528.943 2.828 1.07M6 6l3.735-2.477a3.24 3.24 0 0 1 3.53 0L17 6"
           />
@@ -33,8 +39,8 @@ const creatorBenefits = [
     ),
   },
   {
-    title: "Exposure",
-    description: "Grow your audience across Africa and beyond.",
+    title: "Global Exposure",
+    description: "Scale your influence. Grow your professional audience across Africa and international markets.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24">
         <path
@@ -46,7 +52,7 @@ const creatorBenefits = [
   },
   {
     title: "Cultural Impact",
-    description: "Preserve and celebrate heritage while sharing.",
+    description: "Preserve and celebrate local heritage while sharing your expertise with the next generation.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 48 48">
         <path
@@ -86,30 +92,39 @@ interface BenefitCardProps {
 
 function BenefitCard({ title, description, icon }: BenefitCardProps) {
   return (
-    <div className="bg-primary p-4 rounded-md flex flex-col items-center text-center w-full h-full">
-      <div className="mb-3 text-primary-foreground">{icon}</div>
-      <h4 className="text-xl font-bold text-primary-foreground">{title}</h4>
-      <p className="text-md text-primary-foreground/90">{description}</p>
+    <div className="group bg-primary p-8 rounded-md flex flex-col items-center text-center w-full h-full transition-all duration-300 hover:-translate-y-2 border border-white/10 shadow-none">
+      <div className="mb-5 text-primary-foreground p-3 rounded-full bg-white/10 group-hover:bg-white/20 transition-colors">
+        {icon}
+      </div>
+      <h4 className="text-xl font-black text-primary-foreground mb-3 uppercase tracking-tight">
+        {title}
+      </h4>
+      <p className="text-sm leading-relaxed text-primary-foreground/80 font-medium">
+        {description}
+      </p>
     </div>
   );
 }
 
 export default function ContentCreatorSection() {
   return (
-    <section className="py-12 sm:py-20 bg-background">
-      <div className="container mx-auto px-4 max-w-4xl text-center">
-        <h4 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-2">
-          For Content Creators
-        </h4>
+    <section className="py-16 sm:py-24 bg-background overflow-hidden shadow-none">
+      <div className="container mx-auto px-6 max-w-6xl text-center">
+        
+        <div className="mb-16 space-y-4">
+          <Badge variant="outline" className="px-4 py-1 border-primary/30 text-primary bg-primary/5 rounded-full uppercase text-[10px] font-bold tracking-[0.2em] shadow-none">
+            Creators & Educators
+          </Badge>
+          <h2 className="text-3xl sm:text-5xl font-black text-foreground tracking-tighter">
+            Share Your Knowledge. <br className="hidden sm:block" />
+            <span className="text-primary">Build Your Legacy.</span>
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Whether you are an educator, storyteller, or industry trainer, Evuka provides the ecosystem to reach motivated learners and monetize your expertise.
+          </p>
+        </div>
 
-        <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Are you an educator, storyteller, or trainer? evuka gives you the
-          tools to reach learners, earn from your content, and make a cultural impact.
-        </p>
-
-        <h3 className="text-xl font-bold text-foreground mb-6">Benefits</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 shadow-none">
           {creatorBenefits.map((benefit) => (
             <BenefitCard
               key={benefit.title}
@@ -120,12 +135,20 @@ export default function ContentCreatorSection() {
           ))}
         </div>
 
-        <Link
-          href="https://tutors.e-vuka.com/onboarding"
-          className="inline-block bg-secondary text-secondary-foreground font-semibold text-base py-3 px-8 rounded-md transition duration-200 hover:bg-secondary/90"
-        >
-          Start Creating
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link
+            href="https://tutors.e-vuka.com/onboarding"
+            className="w-full sm:w-auto group flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-black text-sm uppercase tracking-widest py-4 px-10 rounded-md transition-all duration-300 hover:opacity-90 hover:gap-4 shadow-none active:scale-95"
+          >
+            Start Creating
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+          
+          <p className="text-[11px] uppercase font-bold text-muted-foreground tracking-widest sm:ml-4">
+            Join 500+ educators today
+          </p>
+        </div>
+
       </div>
     </section>
   );

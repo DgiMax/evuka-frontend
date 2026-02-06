@@ -61,7 +61,7 @@ export default function GridEventCard({ event }: { event: any }) {
         <div className="space-y-1.5 mb-4">
           <div className="flex items-center gap-2 text-gray-400 text-[10px] font-bold uppercase">
             <CalendarDays size={12} className="text-primary" />
-            {eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {eventDate.toLocaleDateString()}
           </div>
           <div className="flex items-center gap-2 text-gray-400 text-[10px] font-bold uppercase truncate">
             <MapPin size={12} className="text-primary" />
